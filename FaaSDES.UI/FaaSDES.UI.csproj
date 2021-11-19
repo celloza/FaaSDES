@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net6.0-windows</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UseWPF>true</UseWPF>
+    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DefineConstants>DEBUG;TRACE;WPF</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Resource Include="App.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Syncfusion.Calculate.Base" Version="19.3.0.54" />
+    <PackageReference Include="Syncfusion.PdfViewer.WPF" Version="19.3.0.54" />
+    <PackageReference Include="Syncfusion.PropertyGrid.WPF" Version="19.3.0.54" />
+    <PackageReference Include="Syncfusion.SfDiagram.WPF" Version="19.3.0.54" />
+    <PackageReference Include="Syncfusion.SfShared.WPF" Version="18.3.0.38" />
+    <PackageReference Include="Syncfusion.Themes.Office2019Colorful.WPF" Version="19.3.0.54" />
+    <PackageReference Include="Syncfusion.Tools.WPF" Version="19.3.0.54" />
+    <PackageReference Include="System.Collections.Immutable" Version="6.0.0" />
+    <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
+    <PackageReference Include="System.ComponentModel.Annotations" Version="5.0.0" />
+    <PackageReference Include="System.Data.DataSetExtensions" Version="4.5.0" />
+    <PackageReference Include="Microsoft.Windows.Compatibility" Version="6.0.0" />
+  </ItemGroup>
+</Project>
