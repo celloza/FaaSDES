@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FaaSDES.Sim.NodeStatistics;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -19,6 +20,17 @@ namespace FaaSDES.Sim.Nodes
         /// parallel executions).
         /// </summary>
         public int ResourcesAvailable { get; set; }
+
+        public new EventSimNodeStats Stats { get; set; }
+
+        public override void EnableStats()
+        {
+            if (!_isStatsEnabled)
+            {
+                _isStatsEnabled = true;
+                Stats = new();
+            }
+        }
 
         #region Constructors
 
@@ -47,7 +59,7 @@ namespace FaaSDES.Sim.Nodes
            : base(simulation, id, name)
         {
             ExecutionTime = executionTime;
-        }
+        }       
 
         #endregion
     }

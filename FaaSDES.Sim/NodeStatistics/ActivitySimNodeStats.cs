@@ -4,8 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FaaSDES.Sim.Nodes
+namespace FaaSDES.Sim.NodeStatistics
 {
-    public interface ISimNode
-    { }
+    public class ActivitySimNodeStats : SimNodeStatsBase
+    {
+    }
 }

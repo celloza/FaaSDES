@@ -37,14 +37,51 @@ namespace FaaSDES.Sim
             State.CurrentDateTime += _settings.Increment;
 
             // 1. Generate the requisite tokens using the token generator
-            if (StartNode.CanEnqueueToken)
+            if (StartNode.TokenQueue.SpaceInQueue > 0)
             {
-                foreach (ISimToken token in _tokenGenerator.GetNextTokens(State))
-                    StartNode.Tokens.Enqueue(token);
+                var tokensToQueue = _tokenGenerator.GetNextTokens(State);
+                var placesInQueue = StartNode.TokenQueue.SpaceInQueue;
+                
+                if (tokensToQueue.Count() > placesInQueue)
+                {
+                    var tokensToAdd = tokensToQueue.Take(placesInQueue);
+                    foreach (var token in tokensToAdd)
+                    {
+                        StartNode.TokenQueue.AddTokenToQueue(token);
+                    }
+
+                    if (StartNode.IsStatsEnabled)
+                    {
+                        foreach (var token in tokensToQueue.Except(tokensToAdd))
+                        {
+                            //TODO: Possibly log detailed information about the lost
+                            // queue events to an Azure Table.
+
+                            StartNode.Stats.NumberOfQueueOverflows += 1;
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var token in tokensToQueue)
+                        StartNode.TokenQueue.AddTokenToQueue(token);
+                }
+
+                if (StartNode.IsStatsEnabled && StartNode.TokenQueue.QueueLength > StartNode.Stats.MaximumTokensInQueue)
+                    StartNode.Stats.MaximumTokensInQueue = StartNode.TokenQueue.QueueLength;
             }
 
-            // 2. Iterate through all tokens and take the relevant actions
+            // 2. Iterate through all tokens and take the relevant actions            
+            foreach(SimNodeBase node in Nodes)
+            {
 
+
+
+                // 2.3 Abandon tokens
+                var abandoningTokens = node.TokenQueue.DequeueAbandoningTokens(State.CurrentIteration);
+                if(node.IsStatsEnabled)
+                    node.Stats.NumberOfQueueAbandons += abandoningTokens.Count();
+            }
 
 
 

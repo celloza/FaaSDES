@@ -1,4 +1,5 @@
-﻿using FaaSDES.Sim.Tokens;
+﻿using FaaSDES.Sim.NodeStatistics;
+using FaaSDES.Sim.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,11 +10,6 @@ namespace FaaSDES.Sim.Nodes
 {
     public abstract class SimNodeBase : ISimNode, ISimNodeExecutionHandler
     {
-        /// <summary>
-        /// Signifies the maximum number of tokens that can queue at this 
-        /// specific SimNode.
-        /// </summary>
-        public int MaxQueueLength { get; set; }
 
         /// <summary>
         /// Contains a list of all the inbound flows targeting this <see cref="SimNodeBase"/>.
@@ -25,11 +21,6 @@ namespace FaaSDES.Sim.Nodes
         /// <see cref="SimNodeBase"/>.
         /// </summary>
         public IEnumerable<SequenceFlow> OutboundFlows { get; set; }
-
-        /// <summary>
-        /// List of <see cref="ISimToken"/> queueing at this <see cref="SimToken"/>.
-        /// </summary>
-        public Queue<ISimToken> Tokens { get; set; }
         
         /// <summary>
         /// The identifier for this Node from the BPMN XML's Id attribute.
@@ -46,16 +37,27 @@ namespace FaaSDES.Sim.Nodes
         /// </summary>
         public Simulation Simulation { get; set; }
 
-        /// <summary>
-        /// Checks whether there is space in the queue to enqueue another <see cref="Token"/>.
-        /// </summary>
-        public bool CanEnqueueToken
-        {
-            get
-            {
-                return Tokens != null && Tokens.Count < MaxQueueLength;
-            }
-        }
+        ///// <summary>
+        ///// Checks whether there is space in the queue to enqueue another <see cref="Token"/>.
+        ///// </summary>
+        //public bool CanEnqueueToken
+        //{
+        //    get
+        //    {
+        //        return Tokens != null && Tokens.Count < MaxQueueLength;
+        //    }
+        //}
+
+        ///// <summary>
+        ///// Returns the number of <see cref="Tokens"/> that can be queued.
+        ///// </summary>
+        //public int PlacesInQueue
+        //{
+        //    get
+        //    {
+        //        return MaxQueueLength - Tokens.Count;
+        //    }
+        //}
 
         /// <summary>
         /// The <see cref="Task"/> to be executed when this <see cref="SimNodeBase"/> is
@@ -64,13 +66,29 @@ namespace FaaSDES.Sim.Nodes
         public Task ExecutionTask { get; set; }
 
         /// <summary>
-        /// Clears out all tokens in the queue.
+        /// Signifies whether statistics should be gathered for this node.
         /// </summary>
-        /// <exception cref="NotImplementedException"></exception>
-        public void PurgeQueue()
+        public bool IsStatsEnabled
         {
-            throw new NotImplementedException();
+            get { return _isStatsEnabled; }
         }
+
+        /// <summary>
+        /// Contains statistics pertaining to this <see cref="ISimNode"/>. Should be 
+        /// overriden in classes inheriting from this class to provide more topical
+        /// statistics.
+        /// </summary>
+        public SimNodeStatsBase Stats { get; set; }
+
+        ///// <summary>
+        ///// Clears out all tokens in the queue.
+        ///// </summary>
+        ///// <exception cref="NotImplementedException"></exception>
+        //public void PurgeQueue()
+        //{
+        //    throw new NotImplementedException();
+        //}
+        public NodeQueue TokenQueue { get; set; }
 
         /// <summary>
         /// Executes the pre-set execution task.
@@ -82,6 +100,8 @@ namespace FaaSDES.Sim.Nodes
             ExecutionTask.Start();
         }
 
+        public abstract void EnableStats();
+
         #region Constructors
 
         public SimNodeBase(string id, string name)
@@ -89,8 +109,7 @@ namespace FaaSDES.Sim.Nodes
             Id = id;
             Name = name;
             InboundFlows = new List<SequenceFlow>();
-            OutboundFlows = new List<SequenceFlow>();
-            Tokens = new Queue<ISimToken>();
+            OutboundFlows = new List<SequenceFlow>();            
         }
 
         public SimNodeBase(Simulation simulation, string id, string name)
@@ -110,6 +129,8 @@ namespace FaaSDES.Sim.Nodes
         }
 
         #endregion
+
+        internal bool _isStatsEnabled;
 
     }
 }

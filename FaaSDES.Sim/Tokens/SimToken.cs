@@ -30,5 +30,11 @@ namespace FaaSDES.Sim.Tokens
         /// </summary>
         public ISimNode CurrentLocation { get; set; }
 
+        /// <summary>
+        /// The maximum number of simulation cycles that this token is willing to wait
+        /// in a queue. When moving to another queue, this value should be reset to 0.
+        /// </summary>
+        public int MaxWaitTime { get; set; } = int.MaxValue;
+
     }
 }

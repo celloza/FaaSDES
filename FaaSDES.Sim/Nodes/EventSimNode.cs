@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FaaSDES.Sim.NodeStatistics;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +9,17 @@ namespace FaaSDES.Sim.Nodes
 {
     public class EventSimNode : SimNodeBase
     {
+        public new EventSimNodeStats Stats { get; set; }
+
+        public override void EnableStats()
+        {
+            if (!_isStatsEnabled)
+            {
+                _isStatsEnabled = true;
+                Stats = new();
+            }
+        }
+
         #region Constructors
 
         public EventSimNode(string id, string name,
@@ -25,6 +37,8 @@ namespace FaaSDES.Sim.Nodes
         public EventSimNode(Simulation simulation, string id, string name)
            : base(simulation, id, name)
         { }
+
+        
 
         #endregion
     }

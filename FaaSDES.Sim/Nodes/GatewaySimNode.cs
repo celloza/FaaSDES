@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FaaSDES.Sim.NodeStatistics;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,6 +10,17 @@ namespace FaaSDES.Sim.Nodes
     public class GatewaySimNode : SimNodeBase
     {
         public GatewaySimNodeType Type { get; set; }
+
+        public new GatewaySimNodeStats Stats { get; set; }
+
+        public override void EnableStats()
+        {
+            if (!_isStatsEnabled)
+            {
+                _isStatsEnabled = true;
+                Stats = new();
+            }
+        }
 
         #region Constructors
 
@@ -31,5 +43,7 @@ namespace FaaSDES.Sim.Nodes
         }
 
         #endregion
+
+        
     }
 }
