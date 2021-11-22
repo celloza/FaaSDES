@@ -51,7 +51,7 @@ namespace FaaSDES.Sim
             StartNode = new StartSimNode(sim, _tokenGenerator, start.Attribute("id").Value, start.Attribute("id").Value);
             
 
-            Nodes = BuildNodes(SourceBpmn);
+            Nodes = BuildAndLinkNodes(SourceBpmn);
             
             //var nodes = BuildNodes(ProcessXML);
             //var processInstance = new ProcessInstance(this);
