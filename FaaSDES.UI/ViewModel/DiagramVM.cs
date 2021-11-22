@@ -18,6 +18,7 @@ using Syncfusion.XPS;
 using Syncfusion.Pdf;
 using FaaSDES.UI.Nodes;
 using System.Diagnostics;
+using FaaSDES.Sim.Tokens.Generation;
 
 namespace FaaSDES.UI.ViewModel
 {
@@ -1663,23 +1664,36 @@ namespace FaaSDES.UI.ViewModel
                     // Load the bpmn document
                     using (FileStream fileStream = File.OpenRead(this._SavedPath))
                     {
-                        var simulator = new Simulator(fileStream);
+                        //var simulator = new Simulator(fileStream);
 
-                        var simulatorInstance = simulator.NewProcessInstance();
-                        simulatorInstance.SetDefaultHandlers();
-                        simulatorInstance.SetHandler("task", new ActivityHandler());
-                        simulatorInstance.SetHandler("startEvent", new StartHandler());
-                        simulatorInstance.SetHandler("inclusiveGateway", new GatewayHandler());
-                        simulatorInstance.SetHandler("exclusiveGateway", new GatewayHandler());
-                        simulatorInstance.SetHandler("parallelGateway", new GatewayHandler());
-                        simulatorInstance.SetHandler("endEvent", new StartHandler());
-                        simulatorInstance.SetHandler("sequenceFlow", new FlowHandler());
+                        //var simulatorInstance = simulator.NewProcessInstance();
+                        //simulatorInstance.SetDefaultHandlers();
+                        //simulatorInstance.SetHandler("task", new ActivityHandler());
+                        //simulatorInstance.SetHandler("startEvent", new StartHandler());
+                        //simulatorInstance.SetHandler("inclusiveGateway", new GatewayHandler());
+                        //simulatorInstance.SetHandler("exclusiveGateway", new GatewayHandler());
+                        //simulatorInstance.SetHandler("parallelGateway", new GatewayHandler());
+                        //simulatorInstance.SetHandler("endEvent", new StartHandler());
+                        //simulatorInstance.SetHandler("sequenceFlow", new FlowHandler());
 
-                        //add process variables here
-                        //var processVar = new Dictionary<string, object>() { { "processVar1", "value" }, { "processVar2", 50 } };
-                        var processVar = new Dictionary<string, object>();
-                        simulatorInstance.Start(processVar);
+                        ////add process variables here
+                        ////var processVar = new Dictionary<string, object>() { { "processVar1", "value" }, { "processVar2", 50 } };
+                        //var processVar = new Dictionary<string, object>();
+                        //simulatorInstance.Start(processVar);
                         //Console.ReadLine();
+
+                        var simulator = new FaaSDES.Sim.Simulator(
+                            new TimerSimTokenGenerator(
+                                new GenerationSettings(), 
+                                new TimeOnly(), 
+                                new TimeOnly(), 
+                                new WeekDaySchedule(true, true, true, true, true, true, true)), 
+                            new Sim.SimulatorSettings());
+
+                        simulator.BuildSimulatorFromBpmnXml(fileStream);
+                        var simulation = simulator.NewSimulationInstance();
+
+
                     }             
                 }
                 else
