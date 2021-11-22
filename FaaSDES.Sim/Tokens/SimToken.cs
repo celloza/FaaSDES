@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FaaSDES.Sim.Nodes;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -22,7 +23,12 @@ namespace FaaSDES.Sim.Tokens
         /// <summary>
         /// A unique identifier for this <see cref="SimToken"/>.
         /// </summary>
-        public Guid Id { get; set; }    
+        public Guid Id { get; set; }
+        
+        /// <summary>
+        /// Where the token currently is in the process.
+        /// </summary>
+        public ISimNode CurrentLocation { get; set; }
 
     }
 }

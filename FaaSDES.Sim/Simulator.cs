@@ -15,16 +15,43 @@ namespace FaaSDES.Sim
     /// </summary>
     public class Simulator
     {
-        public IEnumerable<ISimNode> Nodes { get; set; }
 
-        public StartSimNode StartNode { get; set; }
-
-        public Simulator(ISimTokenGenerator tokenGenerator, SimulatorSettings settings)
+        /// <summary>
+        /// Creates a new <see cref="Simulator"/> instance with the provided 
+        /// <see cref="ISimTokenGenerator"/> and <see cref="SimulationSettings"/>.
+        /// </summary>
+        /// <param name="tokenGenerator">An instance of <see cref="ISimTokenGenerator"/>, 
+        /// responsible for the generation of tokens for the simulation.</param>
+        /// <param name="settings">An instance of <see cref="SimulationSettings"/> that
+        /// contains settings controlling the <see cref="Simulator"/>.</param>
+        public static Simulator FromBpmnXML(FileStream streamToFile)
         {
-            _tokenGenerator = tokenGenerator;
-            _settings = settings;
-        }
+            if (streamToFile == null)
+                throw new ArgumentNullException(nameof(streamToFile));
 
+            Simulator simulator = new();
+
+            simulator.BpmnNamespace = @"http://www.omg.org/spec/BPMN/20100524/MODEL";
+
+            XDocument doc = XDocument.Load(streamToFile);            
+
+            if (doc.Root == null || doc.Root.Element(simulator.BpmnNamespace + "process") == null)
+                throw new InvalidOperationException("The provided XML file does not contain a root process node.");
+            else
+            {
+                simulator.SourceBpmn = doc.Root.Element(simulator.BpmnNamespace + "process");
+                simulator.Properties = simulator.PropertyInitializer(simulator.SourceBpmn);
+            }
+
+            return simulator;
+        }
+                
+        /// <summary>
+        /// Initializes the class with the provided BPMN XML FileStream object.
+        /// </summary>
+        /// <param name="streamToFile"></param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="InvalidOperationException"></exception>
         public void BuildSimulatorFromBpmnXml(FileStream streamToFile)
         {
             if(streamToFile == null)
@@ -40,46 +67,47 @@ namespace FaaSDES.Sim
                 SourceBpmn = doc.Root.Element(BpmnNamespace + "process");
                 Properties = PropertyInitializer(SourceBpmn);
             }
-
         }
 
-        public Simulation NewSimulationInstance()
+        /// <summary>
+        /// Creates a new <see cref="Simulation"/> instance based on this <see cref="Simulator"/>.
+        /// </summary>
+        /// <returns></returns>
+        public Simulation NewSimulationInstance(SimulationSettings settings, ISimTokenGenerator tokenGenerator)
         {
-            Simulation sim = new Simulation(this);
+            Simulation sim = new(this, tokenGenerator, settings);
 
-            var start = SourceBpmn.Element(BpmnNamespace + "startEvent");
-            StartNode = new StartSimNode(sim, _tokenGenerator, start.Attribute("id").Value, start.Attribute("id").Value);
-            
+            sim.Nodes = BuildAndLinkNodes(SourceBpmn, sim, out StartSimNode startNode);
 
-            Nodes = BuildAndLinkNodes(SourceBpmn);
-            
-            //var nodes = BuildNodes(ProcessXML);
-            //var processInstance = new ProcessInstance(this);
-            
-            //BuildLinkedNodes(current, ref node, nodes, processInstance);
-            //processInstance.Id = Guid.NewGuid().ToString();
-            //processInstance.StartNode = node;
-            //processInstance.Nodes = nodes.ToImmutableDictionary();
-
+            sim.StartNode = startNode;
             return sim;
         }
 
-        private IEnumerable<ISimNode> BuildAndLinkNodes(XElement source)
+        /// <summary>
+        /// Parses the provided BPMN XML contents into POCOs.
+        /// </summary>
+        /// <param name="source"></param>
+        /// <param name="sim"></param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        private IEnumerable<ISimNode> BuildAndLinkNodes(XElement source, Simulation sim, out StartSimNode startNode)
         {
-            List<SimNodeBase> nodes = new List<SimNodeBase>();
+            List<SimNodeBase> nodes = new();
             
             var flows = source.Elements().Where(x => x.Name == BpmnNamespace + "sequenceFlow");
 
             var start = SourceBpmn.Element(BpmnNamespace + "startEvent");
+            startNode = new(sim, start.Attribute("id").Value, start.Attribute("id").Value);
+
             //Add the outgoing flow(s) on the StartEvent
-            LinkSequenceFlows(StartNode, start, flows);
-            nodes.Add(StartNode);
+            LinkSequenceFlows(startNode, start, flows);
+            nodes.Add(startNode);
 
             // find all tasks
             var activities = source.Elements().Where(x => x.Name == BpmnNamespace + "task");
             foreach(var activity in activities)
             {
-                ActivitySimNode node = new ActivitySimNode(activity.Attribute("id").Value,
+                ActivitySimNode node = new(sim, activity.Attribute("id").Value,
                    activity.Name.LocalName);
                 LinkSequenceFlows(node, activity, flows);
                 nodes.Add(node);
@@ -89,8 +117,8 @@ namespace FaaSDES.Sim
             var exclusiveGateways = source.Elements().Where(x => x.Name == BpmnNamespace + "exclusiveGateway");
             foreach (var exclusiveGateway in exclusiveGateways)
             {
-                GatewaySimNode node = new GatewaySimNode(exclusiveGateway.Attribute("id").Value,
-                   exclusiveGateway.Name.LocalName);
+                GatewaySimNode node = new(sim, exclusiveGateway.Attribute("id").Value,
+                   exclusiveGateway.Name.LocalName, GatewaySimNodeType.Exclusive);
                 LinkSequenceFlows(node, exclusiveGateway, flows);
                 nodes.Add(node);
             }
@@ -99,8 +127,8 @@ namespace FaaSDES.Sim
             var inclusiveGateways = source.Elements().Where(x => x.Name == BpmnNamespace + "inclusiveGateway");
             foreach (var inclusiveGateway in inclusiveGateways)
             {
-                GatewaySimNode node = new GatewaySimNode(inclusiveGateway.Attribute("id").Value,
-                   inclusiveGateway.Name.LocalName);
+                GatewaySimNode node = new(sim, inclusiveGateway.Attribute("id").Value,
+                   inclusiveGateway.Name.LocalName, GatewaySimNodeType.Inclusive);
                 LinkSequenceFlows(node, inclusiveGateway, flows);
                 nodes.Add(node);
             }
@@ -109,7 +137,7 @@ namespace FaaSDES.Sim
             var intermediateThrowEvents = source.Elements().Where(x => x.Name == BpmnNamespace + "intermediateThrowEvent");
             foreach (var intermediateThrowEvent in intermediateThrowEvents)
             {
-                EventSimNode node = new EventSimNode(intermediateThrowEvent.Attribute("id").Value,
+                EventSimNode node = new(sim, intermediateThrowEvent.Attribute("id").Value,
                    intermediateThrowEvent.Name.LocalName);
                 LinkSequenceFlows(node, intermediateThrowEvent, flows);
                 nodes.Add(node);
@@ -119,8 +147,8 @@ namespace FaaSDES.Sim
             var parallelGateways = source.Elements().Where(x => x.Name == BpmnNamespace + "parallelGateway");
             foreach (var parallelGateway in parallelGateways)
             {
-                GatewaySimNode node = new GatewaySimNode(parallelGateway.Attribute("id").Value,
-                   parallelGateway.Name.LocalName);
+                GatewaySimNode node = new(sim, parallelGateway.Attribute("id").Value,
+                   parallelGateway.Name.LocalName, GatewaySimNodeType.Parallel);
                 LinkSequenceFlows(node, parallelGateway, flows);
                 nodes.Add(node);
             }
@@ -129,7 +157,7 @@ namespace FaaSDES.Sim
             var endEvents = source.Elements().Where(x => x.Name == BpmnNamespace + "endEvent");
             foreach (var endEvent in endEvents)
             {
-                EventSimNode node = new EventSimNode(endEvent.Attribute("id").Value,
+                EventSimNode node = new(endEvent.Attribute("id").Value,
                    endEvent.Name.LocalName);
                 LinkSequenceFlows(node, endEvent, flows);
                 nodes.Add(node);
@@ -172,12 +200,18 @@ namespace FaaSDES.Sim
             return nodes;
         }
 
-        public void LinkSequenceFlows(SimNodeBase node, XElement nodeSource, IEnumerable<XElement> flows)
+        /// <summary>
+        /// Link the Target and Source nodes based on the SequenceFlows present in the BPMN XML file.
+        /// </summary>
+        /// <param name="node"></param>
+        /// <param name="nodeSource"></param>
+        /// <param name="flows"></param>
+        private void LinkSequenceFlows(SimNodeBase node, XElement nodeSource, IEnumerable<XElement> flows)
         {
             foreach (var inboundFlowId in nodeSource.Elements().Where(x => x.Name.LocalName == "incoming").Select(x => x.Value))
             {
                 var singleFlow = flows.Single(x => x.Attribute("id").Value == inboundFlowId);
-                var newFlow = new SequenceFlow(singleFlow.Attribute("sourceRef").Value, node.Id, inboundFlowId);
+                SequenceFlow newFlow = new(singleFlow.Attribute("sourceRef").Value, node.Id, inboundFlowId);
                 newFlow.TargetNode = node;
                 ((List<SequenceFlow>)node.InboundFlows).Add(newFlow);
                 // how to set sourceNode here?
@@ -186,12 +220,14 @@ namespace FaaSDES.Sim
             foreach (var outboundFlowId in nodeSource.Elements().Where(x => x.Name.LocalName == "outgoing").Select(x => x.Value))
             {
                 var singleFlow = flows.Single(x => x.Attribute("id").Value == outboundFlowId);
-                var newFlow = new SequenceFlow(node.Id, singleFlow.Attribute("targetRef").Value, outboundFlowId);
+                SequenceFlow newFlow = new(node.Id, singleFlow.Attribute("targetRef").Value, outboundFlowId);
                 newFlow.SourceNode = node;
                 ((List<SequenceFlow>)node.OutboundFlows).Add(newFlow);
                 // how to set targetNode here?
             }
-        }        
+        }
+
+        private Simulator() { }
 
         private IEnumerable<BpmnProperty> PropertyInitializer(XElement source)
         {
@@ -222,8 +258,6 @@ namespace FaaSDES.Sim
         private XElement SourceBpmn;
         private XNamespace BpmnNamespace;
         internal IEnumerable<BpmnProperty> Properties;
-        private readonly ISimTokenGenerator _tokenGenerator;
-        private readonly SimulatorSettings _settings;
     }
 
     internal class BpmnProperty

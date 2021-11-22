@@ -1,6 +1,6 @@
 ﻿namespace FaaSDES.Sim
 {
-    public class SimulatorSettings
+    public class SimulationSettings
     {
         /// <summary>
         /// The maximum number of iterations that this simulator can run for.
@@ -18,5 +18,11 @@
         /// <see cref="TimerSimTokenGenerator"/> is used.
         /// </summary>
         public DateTime EndDateTime { get; set; }
+
+        /// <summary>
+        /// Contains the simulation increment. The simulation clock will be
+        /// increment by this value on each cycle.
+        /// </summary>
+        public TimeSpan Increment { get; set; } = TimeSpan.FromDays(1);
     }
 }

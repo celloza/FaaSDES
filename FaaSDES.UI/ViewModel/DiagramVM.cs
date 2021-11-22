@@ -1682,19 +1682,25 @@ namespace FaaSDES.UI.ViewModel
                         //simulatorInstance.Start(processVar);
                         //Console.ReadLine();
 
-                        var simulator = new FaaSDES.Sim.Simulator(
-                            new TimerSimTokenGenerator(
-                                new GenerationSettings(), 
-                                new TimeOnly(), 
-                                new TimeOnly(), 
-                                new WeekDaySchedule(true, true, true, true, true, true, true)), 
-                            new Sim.SimulatorSettings());
+                        var simulator = FaaSDES.Sim.Simulator.FromBpmnXML(fileStream);
 
-                        simulator.BuildSimulatorFromBpmnXml(fileStream);
-                        var simulation = simulator.NewSimulationInstance();
+                        var tokenGenerator = new TimerSimTokenGenerator(
+                            new GenerationSettings(),
+                            new TimeOnly(),
+                            new TimeOnly(),
+                            new WeekDaySchedule(true, true, true, true, true, false, false));
+
+                        var simSettings = new Sim.SimulationSettings()
+                        {
+                            StartDateTime = new DateTime(2021, 01, 01),
+                            EndDateTime = new DateTime(2023, 12, 31),
+                            MaximumIterations = int.MaxValue
+                        };
+
+                        var simulation = simulator.NewSimulationInstance(simSettings, tokenGenerator);
 
 
-                    }             
+                    }
                 }
                 else
                 {
@@ -2398,7 +2404,7 @@ namespace FaaSDES.UI.ViewModel
     class ActivityHandler : INodeHandler
     {
         public void Execute(SimulationNode currentNode, SimulationNode previousNode)
-        {            
+        {
             Trace.WriteLine($"Executing {currentNode.Content}...");
             currentNode.Done();
         }

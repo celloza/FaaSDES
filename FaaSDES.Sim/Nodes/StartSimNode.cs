@@ -9,14 +9,15 @@ namespace FaaSDES.Sim.Nodes
 {
     public class StartSimNode : SimNodeBase
     {
-        public ISimTokenGenerator TokenGenerator { get; }
+        #region Constructors
 
-        public StartSimNode(Simulation simulation, ISimTokenGenerator generator, string id, string name)
+        public StartSimNode(Simulation simulation, string id, string name)
             : base(simulation, id, name)
         {
-            TokenGenerator = generator;
             OutboundFlows = new List<SequenceFlow>();
             InboundFlows = new List<SequenceFlow>();
         }
+
+        #endregion
     }
 }

@@ -8,20 +8,31 @@ namespace FaaSDES.Sim.Nodes
 {
     public class ActivitySimNode : SimNodeBase
     {
-        public int ExecutionTime { get; set; }
+        /// <summary>
+        /// The time it takes to execute this activity for a single token.
+        /// </summary>
+        public TimeSpan ExecutionTime { get; set; }
+
+        /// <summary>
+        /// Signifies the number of resources available to this Activity. If more than one 
+        /// resource is available, tokens can be executed in parallel (i.e. 3 resources, 3 
+        /// parallel executions).
+        /// </summary>
+        public int ResourcesAvailable { get; set; }
+
+        #region Constructors
 
         public ActivitySimNode(string id, string name,
             IEnumerable<SequenceFlow> inboundFlows, IEnumerable<SequenceFlow> outboundFlows)
             : base(id, name, inboundFlows, outboundFlows)
-        {
+        { }
 
-
-        }
-        public ActivitySimNode(string id, string name)
+        public ActivitySimNode(Simulation sim, string id, string name)
             : base(id, name, null, null)
         {
             OutboundFlows = new List<SequenceFlow>();
             InboundFlows = new List<SequenceFlow>();
+            Simulation = sim;
         }
 
         /// <summary>
@@ -32,10 +43,12 @@ namespace FaaSDES.Sim.Nodes
         /// is associated to.</param>
         /// <param name="executionTime">The time (in seconds) that this activity takes to
         /// complete.</param>
-        public ActivitySimNode(Simulation simulation, string id, string name, int executionTime)
+        public ActivitySimNode(Simulation simulation, string id, string name, TimeSpan executionTime)
            : base(simulation, id, name)
         {
             ExecutionTime = executionTime;
         }
+
+        #endregion
     }
 }

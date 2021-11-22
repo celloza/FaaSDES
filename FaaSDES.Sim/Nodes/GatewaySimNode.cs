@@ -8,12 +8,14 @@ namespace FaaSDES.Sim.Nodes
 {
     public class GatewaySimNode : SimNodeBase
     {
+        public GatewaySimNodeType Type { get; set; }
+
+        #region Constructors
+
         public GatewaySimNode(string id, string name,
                 IEnumerable<SequenceFlow> inboundFlows, IEnumerable<SequenceFlow> outboundFlows)
             : base(id, name, inboundFlows, outboundFlows)
-        {
-
-        }
+        { }
 
         public GatewaySimNode(string id, string name)
            : base(id, name, null, null)
@@ -22,10 +24,12 @@ namespace FaaSDES.Sim.Nodes
             InboundFlows = new List<SequenceFlow>();
         }
 
-        public GatewaySimNode(Simulation simulation, string id, string name)
+        public GatewaySimNode(Simulation simulation, string id, string name, GatewaySimNodeType type)
             : base(simulation, id, name)
         {
-
+            Type = type;
         }
+
+        #endregion
     }
 }
