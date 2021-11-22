@@ -40,7 +40,7 @@
             if (startTime > endTime)
                 throw new ArgumentException("EndTime cannot be before StartTime");
 
-            if (daysOfWeek == null || daysOfWeek.AtLeastOneDayActive())
+            if (daysOfWeek == null || !daysOfWeek.AtLeastOneDayActive())
                 throw new ArgumentException("Need at least one day a week to be active.");
 
             StartTime = startTime;
