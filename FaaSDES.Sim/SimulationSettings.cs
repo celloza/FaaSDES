@@ -23,6 +23,6 @@
         /// Contains the simulation increment. The simulation clock will be
         /// increment by this value on each cycle.
         /// </summary>
-        public TimeSpan Increment { get; set; } = TimeSpan.FromDays(1);
+        public TimeSpan TimeFactor { get; set; } = TimeSpan.FromDays(1);
     }
 }

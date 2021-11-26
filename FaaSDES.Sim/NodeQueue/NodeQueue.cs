@@ -75,16 +75,45 @@ namespace FaaSDES.Sim.Nodes
         /// <param name="cycleAge">Queued items older than this number of simulation cycles 
         /// will be dequeued.</param>
         /// <returns>List of <see cref="ISimToken"/>.</returns>
-        public IEnumerable<ISimToken> DequeueAbandoningTokens(int cycleAge)
+        public IEnumerable<ISimToken> DequeueAbandoningTokens()
         {
-            var queueItems = _itemsInQueue.Where(x => x.Value.CyclesInQueue >= cycleAge);
-            
-            foreach(var queueItem in queueItems)
-            {
+            var abandonedQueueItems = _itemsInQueue.Where(x => x.Value.CyclesInQueue >= (x.Value.TokenInQueue as SimToken).MaxWaitTime);
+                       
+            foreach (var queueItem in abandonedQueueItems)
                 _itemsInQueue.Remove(queueItem.Key);
-            }
 
-            return queueItems.Select(x => x.Value.TokenInQueue);
+            return abandonedQueueItems.Select(x => x.Value.TokenInQueue);
+        }
+
+        /// <summary>
+        /// Dequeues the <see cref="ISimToken"/> at the specified queue position.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        /// <exception cref="ArgumentException"></exception>
+        public ISimToken DequeueToken(NodeQueueItem queueItem)
+        {
+            if(!_itemsInQueue.Any(x => x.Value == queueItem))
+            {
+                throw new ArgumentException("This queue does not contain the provided key.");
+            }
+            else
+            {
+                var itemToRemove = _itemsInQueue.First(x => x.Value == queueItem);
+                _itemsInQueue.Remove(itemToRemove.Key, out NodeQueueItem removedQueueItem);
+                return removedQueueItem.TokenInQueue;
+            }
+        }
+
+        /// <summary>
+        /// Dequeues the next ISimToken.
+        /// </summary>
+        /// <returns></returns>
+        public ISimToken DequeueTokenNextInLine()
+        {
+            var itemToRemove = _itemsInQueue.MinBy(x => x.Key);
+            _itemsInQueue.Remove(itemToRemove.Key, out NodeQueueItem removedQueueItem);
+            return removedQueueItem.TokenInQueue;
         }
 
         /// <summary>
@@ -134,16 +163,25 @@ namespace FaaSDES.Sim.Nodes
         /// Creates an instance of <see cref="NodeQueue"/>.
         /// </summary>
         /// <param name="maxQueueLength"></param>
-        public NodeQueue()
+        public NodeQueue(int maxQueueLength)
         {
             _itemsInQueue = new();
+            _maxQueueLength = maxQueueLength;
         }
+
+        /// <summary>
+        /// Creates an instance of <see cref="NodeQueue"/>. Defaults the maximum queue
+        /// length to <see cref="int.MaxValue"/>.
+        /// </summary>
+        public NodeQueue()
+            : this(int.MaxValue)
+        { }
 
         #endregion
 
         #region Fields
 
-        private Dictionary<int, NodeQueueItem> _itemsInQueue;
+        private readonly Dictionary<int, NodeQueueItem> _itemsInQueue;
         private int _maxQueueLength = int.MaxValue;
         private int _currentPosition;
 

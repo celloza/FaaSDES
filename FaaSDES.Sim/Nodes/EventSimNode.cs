@@ -9,7 +9,14 @@ namespace FaaSDES.Sim.Nodes
 {
     public class EventSimNode : SimNodeBase
     {
+        /// <summary>
+        /// The <see cref="EventSimNodeStats"/> for this node.
+        /// </summary>
         public new EventSimNodeStats Stats { get; set; }
+
+        public EventSimNodeType Type { get; set; }
+
+        public EventSimNodeTrigger Trigger { get; set; } = EventSimNodeTrigger.None;
 
         public override void EnableStats()
         {

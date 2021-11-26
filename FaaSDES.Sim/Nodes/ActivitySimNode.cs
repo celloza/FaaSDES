@@ -14,6 +14,8 @@ namespace FaaSDES.Sim.Nodes
         /// </summary>
         public TimeSpan ExecutionTime { get; set; }
 
+        public ActivitySimNodeType Type { get; set; } = ActivitySimNodeType.Undefined;
+
         /// <summary>
         /// Signifies the number of resources available to this Activity. If more than one 
         /// resource is available, tokens can be executed in parallel (i.e. 3 resources, 3 
@@ -21,6 +23,9 @@ namespace FaaSDES.Sim.Nodes
         /// </summary>
         public int ResourcesAvailable { get; set; }
 
+        /// <summary>
+        /// The <see cref="EventSimNodeStats"/> for this node.
+        /// </summary>
         public new EventSimNodeStats Stats { get; set; }
 
         public override void EnableStats()
@@ -59,7 +64,7 @@ namespace FaaSDES.Sim.Nodes
            : base(simulation, id, name)
         {
             ExecutionTime = executionTime;
-        }       
+        }
 
         #endregion
     }

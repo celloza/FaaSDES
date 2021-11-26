@@ -33,7 +33,7 @@ namespace FaaSDES.Sim
 
             simulator.BpmnNamespace = @"http://www.omg.org/spec/BPMN/20100524/MODEL";
 
-            XDocument doc = XDocument.Load(streamToFile);            
+            XDocument doc = XDocument.Load(streamToFile);
 
             if (doc.Root == null || doc.Root.Element(simulator.BpmnNamespace + "process") == null)
                 throw new InvalidOperationException("The provided XML file does not contain a root process node.");
@@ -45,7 +45,7 @@ namespace FaaSDES.Sim
 
             return simulator;
         }
-                
+
         /// <summary>
         /// Initializes the class with the provided BPMN XML FileStream object.
         /// </summary>
@@ -54,7 +54,7 @@ namespace FaaSDES.Sim
         /// <exception cref="InvalidOperationException"></exception>
         public void BuildSimulatorFromBpmnXml(FileStream streamToFile)
         {
-            if(streamToFile == null)
+            if (streamToFile == null)
                 throw new ArgumentNullException(nameof(streamToFile));
 
             XDocument doc = XDocument.Load(streamToFile);
@@ -93,7 +93,7 @@ namespace FaaSDES.Sim
         private IEnumerable<ISimNode> BuildAndLinkNodes(XElement source, Simulation sim, out StartSimNode startNode)
         {
             List<SimNodeBase> nodes = new();
-            
+
             var flows = source.Elements().Where(x => x.Name == BpmnNamespace + "sequenceFlow");
 
             var start = SourceBpmn.Element(BpmnNamespace + "startEvent");
@@ -104,11 +104,43 @@ namespace FaaSDES.Sim
             nodes.Add(startNode);
 
             // find all tasks
-            var activities = source.Elements().Where(x => x.Name == BpmnNamespace + "task");
-            foreach(var activity in activities)
+            var activities = source.Elements().Where(x => x.Name.LocalName.EndsWith("task", StringComparison.OrdinalIgnoreCase));
+            foreach (var activity in activities)
             {
                 ActivitySimNode node = new(sim, activity.Attribute("id").Value,
                    activity.Name.LocalName);
+
+                switch (activity.Name.LocalName)
+                {
+                    case "task":
+                        node.Type = ActivitySimNodeType.Undefined;
+                        break;
+                    case "manualTask":
+                        node.Type = ActivitySimNodeType.Manual;
+                        break;
+                    case "sendTask":
+                        node.Type = ActivitySimNodeType.Send;
+                        break;
+                    case "receiveTask":
+                        node.Type = ActivitySimNodeType.Receive;
+                        break;
+                    case "scriptTask":
+                        node.Type = ActivitySimNodeType.Script;
+                        break;
+                    case "receiveInstantiatedTask":
+                        node.Type = ActivitySimNodeType.ReceiveInstantiated;
+                        break;
+                    case "serviceTask":
+                        node.Type = ActivitySimNodeType.Service;
+                        break;
+                    case "businessRuleTask":
+                        node.Type = ActivitySimNodeType.BusinessRule;
+                        break;
+                    case "userTask":
+                        node.Type = ActivitySimNodeType.User;
+                        break;
+                }
+
                 LinkSequenceFlows(node, activity, flows);
                 nodes.Add(node);
             }
@@ -120,6 +152,8 @@ namespace FaaSDES.Sim
                 GatewaySimNode node = new(sim, exclusiveGateway.Attribute("id").Value,
                    exclusiveGateway.Name.LocalName, GatewaySimNodeType.Exclusive);
                 LinkSequenceFlows(node, exclusiveGateway, flows);
+                // TEMPORARY FIX: This should come from the simulation parameters or something
+                node.SetGatewayProbabilityDistribution(new FaaSDES.Sim.Nodes.GatewayProbabilityDistributions.Random());
                 nodes.Add(node);
             }
 
@@ -130,50 +164,63 @@ namespace FaaSDES.Sim
                 GatewaySimNode node = new(sim, inclusiveGateway.Attribute("id").Value,
                    inclusiveGateway.Name.LocalName, GatewaySimNodeType.Inclusive);
                 LinkSequenceFlows(node, inclusiveGateway, flows);
+                // TEMPORARY FIX: This should come from the simulation parameters or something
+                node.SetGatewayProbabilityDistribution(new FaaSDES.Sim.Nodes.GatewayProbabilityDistributions.Random());
                 nodes.Add(node);
             }
 
-            // find all intermediateThrowEvents
-            var intermediateThrowEvents = source.Elements().Where(x => x.Name == BpmnNamespace + "intermediateThrowEvent");
-            foreach (var intermediateThrowEvent in intermediateThrowEvents)
-            {
-                EventSimNode node = new(sim, intermediateThrowEvent.Attribute("id").Value,
-                   intermediateThrowEvent.Name.LocalName);
-                LinkSequenceFlows(node, intermediateThrowEvent, flows);
-                nodes.Add(node);
-            }
-
-            // find all intermediateThrowEvents
+            // find all parallelGateways
             var parallelGateways = source.Elements().Where(x => x.Name == BpmnNamespace + "parallelGateway");
             foreach (var parallelGateway in parallelGateways)
             {
                 GatewaySimNode node = new(sim, parallelGateway.Attribute("id").Value,
                    parallelGateway.Name.LocalName, GatewaySimNodeType.Parallel);
                 LinkSequenceFlows(node, parallelGateway, flows);
+                // TEMPORARY FIX: This should come from the simulation parameters or something
+                node.SetGatewayProbabilityDistribution(new FaaSDES.Sim.Nodes.GatewayProbabilityDistributions.Random());
                 nodes.Add(node);
             }
 
-            // find all endEvents
-            var endEvents = source.Elements().Where(x => x.Name == BpmnNamespace + "endEvent");
-            foreach (var endEvent in endEvents)
+            // find all Events
+            var eventNodes = source.Elements().Where(x => x.Name.LocalName.EndsWith("Event", StringComparison.OrdinalIgnoreCase));
+            foreach (var eventNode in eventNodes)
             {
-                EventSimNode node = new(endEvent.Attribute("id").Value,
-                   endEvent.Name.LocalName);
-                LinkSequenceFlows(node, endEvent, flows);
-                nodes.Add(node);
+                EventSimNode node = new(sim, eventNode.Attribute("id").Value,
+                   eventNode.Name.LocalName);
+
+                switch (eventNode.Name.LocalName)
+                {
+                    case "intermediateThrowEvent":
+                        node.Type = EventSimNodeType.IntermediateThrow;
+                        break;
+                    case "intermediateCatchEvent":
+                        node.Type = EventSimNodeType.IntermediateCatch;
+                        break;
+                    case "endEvent":
+                        node.Type = EventSimNodeType.End;
+                        break;
+                    case "startEvent":
+                        node.Type = EventSimNodeType.Start;
+                        break;
+                }
+
+                LinkSequenceFlows(node, eventNode, flows);
+
+                if (node.Type != EventSimNodeType.Start)
+                    nodes.Add(node);
             }
 
             // not supported at the moment: textAnnotation, association
 
             // Get all the sequence flow information first. When building nodes, we can refer back to this list to get
             // the information of the flow.
-            
+
             foreach (var flow in flows)
             {
 
                 var sourceNodes = nodes.Where(x => x.OutboundFlows.Any(y => y.Id == flow.Attribute("id").Value));
 
-                if(sourceNodes.Count() != 1)
+                if (sourceNodes.Count() != 1)
                 {
                     throw new InvalidOperationException("More than one node in the BPMN XML is connected to a single SequenceFlow. The document is invalid.");
                 }

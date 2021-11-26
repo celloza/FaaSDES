@@ -36,5 +36,10 @@ namespace FaaSDES.Sim.Tokens
         /// </summary>
         public int MaxWaitTime { get; set; } = int.MaxValue;
 
+        /// <summary>
+        /// The number of cycles a token has progressed through.
+        /// </summary>
+        public int Age { get; set; } = 0;
+
     }
 }
