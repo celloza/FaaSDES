@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 
 namespace FaaSDES.Sim.Nodes
 {
-    public interface ISimNode
-    { }
+    public interface ISimNodeExecutionHandler
+    {
+        void Execute(ISimNode node);
+    }
 }

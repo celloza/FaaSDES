@@ -1,4 +1,5 @@
-﻿using FaaSDES.Sim.Tokens.Generation;
+﻿using FaaSDES.Sim.NodeStatistics;
+using FaaSDES.Sim.Tokens.Generation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,14 +10,26 @@ namespace FaaSDES.Sim.Nodes
 {
     public class StartSimNode : SimNodeBase
     {
-        public ISimTokenGenerator TokenGenerator { get; }
+        public new StartSimNodeStats Stats { get; set; }
 
-        public StartSimNode(Simulation simulation, ISimTokenGenerator generator, string id, string name)
+        public override void EnableStats()
+        {
+            if (!_isStatsEnabled)
+            {
+                _isStatsEnabled = true;
+                Stats = new();
+            }
+        }
+
+        #region Constructors
+
+        public StartSimNode(Simulation simulation, string id, string name)
             : base(simulation, id, name)
         {
-            TokenGenerator = generator;
             OutboundFlows = new List<SequenceFlow>();
             InboundFlows = new List<SequenceFlow>();
-        }
+        }        
+
+        #endregion
     }
 }

@@ -6,6 +6,10 @@ using System.Threading.Tasks;
 
 namespace FaaSDES.Sim.Nodes
 {
-    public interface ISimNode
-    { }
+    public enum GatewaySimNodeType
+    {
+        Parallel,
+        Inclusive,
+        Exclusive
+    }
 }

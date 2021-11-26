@@ -34,8 +34,7 @@
         public TimerSimTokenGenerator(GenerationSettings settings, TimeOnly startTime, 
             TimeOnly endTime, WeekDaySchedule daysOfWeek)
         {
-            if(settings == null)
-                throw new ArgumentNullException(nameof(settings));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
             if (startTime > endTime)
                 throw new ArgumentException("EndTime cannot be before StartTime");
@@ -47,7 +46,6 @@
             EndTime = endTime;
             DaysOfWeek = daysOfWeek;
 
-            _settings = settings;
         }
 
         /// <summary>
@@ -60,7 +58,7 @@
             {
                 var newTokens = new List<SimToken>();
 
-                // generate the tokens based on _settings
+                //TODO: generate the tokens based on _settings
                 var temp = _settings.ProbabilisticDistribution;
 
                 return newTokens.AsEnumerable();
