@@ -5,6 +5,7 @@
         Active,
         InQueue,
         Error,
-        Complete
+        Complete,
+        Abandoned
     }
 }

@@ -80,6 +80,7 @@ namespace FaaSDES.Sim
             sim.Nodes = BuildAndLinkNodes(SourceBpmn, sim, out StartSimNode startNode);
 
             sim.StartNode = startNode;
+            sim.StartNode.EnableStats();
             return sim;
         }
 
@@ -109,6 +110,9 @@ namespace FaaSDES.Sim
             {
                 ActivitySimNode node = new(sim, activity.Attribute("id").Value,
                    activity.Name.LocalName);
+
+                // TEMPORARY FIX: Introduce a hard-coded 1 resource limit per activity node
+                node.SetQueueMaximums(int.MaxValue, 1);
 
                 switch (activity.Name.LocalName)
                 {

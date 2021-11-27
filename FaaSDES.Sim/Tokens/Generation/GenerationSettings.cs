@@ -16,5 +16,16 @@ namespace FaaSDES.Sim.Tokens.Generation
         /// token.
         /// </summary>
         public object ProbabilisticDistribution { get; set; }
+
+        public int MinimumTokensPerGeneration { get; set; }
+
+        public int MaximumTokensPerGeneration { get; set; }
+
+        public GenerationSettings(int minimumTokensPerGeneration, int maximumTokensPerGeneration)
+        {
+            MinimumTokensPerGeneration = minimumTokensPerGeneration;
+            MaximumTokensPerGeneration = maximumTokensPerGeneration;
+        }
+
     }
 }

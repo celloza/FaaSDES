@@ -78,9 +78,9 @@ namespace FaaSDES.Sim.Nodes
         /// <summary>
         /// Denotes the amount of time it takes to service a token in this node. This 
         /// <see cref="TimeSpan"/> should be converted to number of simulation cycles, taking
-        /// the time factor into account.
+        /// the time factor into account. By default, this is set to 0.
         /// </summary>
-        public TimeSpan ExecutionTime { get; set; }
+        public TimeSpan ExecutionTime { get; set; } = new TimeSpan(0, 0, 0);
 
         /// <summary>
         /// Executes the pre-set execution task.
@@ -132,7 +132,7 @@ namespace FaaSDES.Sim.Nodes
             OutboundFlows = new List<SequenceFlow>();
             
             WaitingQueue = new NodeQueue();
-            ExecutionQueue = new NodeQueue(1);
+            ExecutionQueue = new NodeQueue();
             ExecutionTime = new TimeSpan(0, 5, 0);
         }
 
