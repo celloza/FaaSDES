@@ -24,5 +24,11 @@
         /// increment by this value on each cycle.
         /// </summary>
         public TimeSpan TimeFactor { get; set; } = TimeSpan.FromDays(1);
+
+        /// <summary>
+        /// Denotes the maximum number of time that a token will remain in
+        /// a queue before it needs to be abandoned.
+        /// </summary>
+        public TimeSpan TokenMaxQueueTime { get; set; } = TimeSpan.MaxValue;
     }
 }

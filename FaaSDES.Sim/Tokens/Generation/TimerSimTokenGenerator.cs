@@ -59,7 +59,15 @@
                 var newTokens = new List<SimToken>();
 
                 //TODO: generate the tokens based on _settings
-                var temp = _settings.ProbabilisticDistribution;
+                int tokensToGenerate = random.Next(_settings.MinimumTokensPerGeneration, 
+                    _settings.MaximumTokensPerGeneration);
+
+                for (int i = 0; i < tokensToGenerate; i++)
+                {
+                    newTokens.Add(new SimToken() { Age = 0, 
+                        Id = Guid.NewGuid(), 
+                        Status = SimTokenStatus.Active });
+                }
 
                 return newTokens.AsEnumerable();
             }
@@ -85,5 +93,6 @@
         }
 
         private readonly GenerationSettings _settings;
+        private readonly Random random = new Random();
     }
 }

@@ -47,6 +47,10 @@ namespace FaaSDES.Sim.Nodes
         /// <param name="token">The <see cref="ISimToken"/> to add.</param>
         public void AddTokenToQueue(ISimToken token)
         {
+            if (_itemsInQueue.Count == 0)
+                _itemsInQueue.Add(1, 
+                    new NodeQueueItem() { TokenInQueue = token });
+            else
             _itemsInQueue.Add(_itemsInQueue.Keys.Max() + 1,
                 new NodeQueueItem() { TokenInQueue = token });
         }
@@ -75,9 +79,9 @@ namespace FaaSDES.Sim.Nodes
         /// <param name="cycleAge">Queued items older than this number of simulation cycles 
         /// will be dequeued.</param>
         /// <returns>List of <see cref="ISimToken"/>.</returns>
-        public IEnumerable<ISimToken> DequeueAbandoningTokens()
+        public IEnumerable<ISimToken> DequeueAbandoningTokens(TimeSpan timeFactor)
         {
-            var abandonedQueueItems = _itemsInQueue.Where(x => x.Value.CyclesInQueue >= (x.Value.TokenInQueue as SimToken).MaxWaitTime);
+            var abandonedQueueItems = _itemsInQueue.Where(x => (x.Value.CyclesInQueue * timeFactor) >= (x.Value.TokenInQueue as SimToken).MaxWaitTime);
                        
             foreach (var queueItem in abandonedQueueItems)
                 _itemsInQueue.Remove(queueItem.Key);

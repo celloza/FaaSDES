@@ -3,6 +3,7 @@ using FaaSDES.Sim.Tokens;
 using FaaSDES.Sim.Tokens.Generation;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -29,147 +30,195 @@ namespace FaaSDES.Sim
         /// <summary>
         /// The <see cref="Simulation"/>'s current state.
         /// </summary>
-        public SimulationState State { get; set; }        
+        public SimulationState State { get; set; }
 
         /// <summary>
         /// Executes this simulation.
         /// </summary>
         public void Execute()
         {
-            // On each simulation cycle:
-            //
-            // 0. Update the SimulationState
-            // 1. Generate the requisite tokens using the token generator
-            // 2. Iterate through all tokens, and either:
-            // 2.1 Abandon
-            // 2.2 Stay where it is
-            // 2.3 Move to the next node
-            // 3. Determine if simulation should continue
+            bool continueExecution = true;
+            _tokenGenerator.Start();
 
-            // 0. Update the SimulationState
-            State.CurrentIteration++;
-            State.CurrentDateTime += _settings.TimeFactor;
-
-            // Update all tokens' age and queue parameters
-            foreach (SimNodeBase node in Nodes)
+            while (continueExecution)
             {
-                foreach (NodeQueueItem queueItem in node.WaitingQueue)
-                {
-                    queueItem.CyclesInQueue++;
-                    (queueItem.TokenInQueue as SimToken).Age++;
-                }
-                foreach (NodeQueueItem queueItem in node.ExecutionQueue)
-                {
-                    queueItem.CyclesInQueue++;
-                    (queueItem.TokenInQueue as SimToken).Age++;
-                }
-            }
+                // On each simulation cycle:
+                //
+                // 0. Update the SimulationState
+                // 1. Generate the requisite tokens using the token generator
+                // 2. Iterate through all tokens, and either:
+                // 2.1 Abandon
+                // 2.2 Stay where it is
+                // 2.3 Move to the next node
+                // 3. Determine if simulation should continue
 
-            // 1. Generate the requisite tokens using the token generator
-            if (StartNode.WaitingQueue.SpaceInQueue > 0)
-            {
-                var tokensToQueue = _tokenGenerator.GetNextTokens(State);
-                var placesInQueue = StartNode.WaitingQueue.SpaceInQueue;
+                // 0. Update the SimulationState
+                State.CurrentIteration++;
+                State.CurrentDateTime += _settings.TimeFactor;
 
-                if (tokensToQueue.Count() > placesInQueue)
+                // Update all tokens' age and queue parameters
+                foreach (SimNodeBase node in Nodes)
                 {
-                    var tokensToAdd = tokensToQueue.Take(placesInQueue);
-                    foreach (var token in tokensToAdd)
+                    foreach (NodeQueueItem queueItem in node.WaitingQueue)
                     {
-                        StartNode.WaitingQueue.AddTokenToQueue(token);
+                        queueItem.CyclesInQueue++;
+                        (queueItem.TokenInQueue as SimToken).Age++;
                     }
-
-                    if (StartNode.IsStatsEnabled)
+                    foreach (NodeQueueItem queueItem in node.ExecutionQueue)
                     {
-                        foreach (var token in tokensToQueue.Except(tokensToAdd))
-                        {
-                            //TODO: Possibly log detailed information about the lost
-                            // queue events to an Azure Table.
-
-                            StartNode.Stats.NumberOfQueueOverflows += 1;
-                        }
+                        queueItem.CyclesInQueue++;
+                        (queueItem.TokenInQueue as SimToken).Age++;
                     }
                 }
-                else
+
+                // 1. Generate the requisite tokens using the token generator
+                if (StartNode.WaitingQueue.SpaceInQueue > 0)
                 {
-                    foreach (var token in tokensToQueue)
-                        StartNode.WaitingQueue.AddTokenToQueue(token);
-                }
+                    var tokensToQueue = _tokenGenerator.GetNextTokens(State);
 
-                if (StartNode.IsStatsEnabled && StartNode.WaitingQueue.QueueLength > StartNode.Stats.MaximumTokensInQueue)
-                    StartNode.Stats.MaximumTokensInQueue = StartNode.WaitingQueue.QueueLength;
-            }
-
-            // 2. Iterate through all tokens and take the relevant actions            
-            foreach (SimNodeBase node in Nodes)
-            {
-                // 2.1 Abandon tokens
-                var abandoningTokens = node.WaitingQueue.DequeueAbandoningTokens();
-
-                if (node.IsStatsEnabled)
-                    node.Stats.NumberOfQueueAbandons += abandoningTokens.Count();
-
-                // Iterate through the tokens being executed, and determine if they are done
-                foreach (NodeQueueItem queueItem in node.ExecutionQueue)
-                {
-                    if ((queueItem.CyclesInQueue * _settings.TimeFactor) >= node.ExecutionTime)
+                    if (tokensToQueue.Count() > 0)
                     {
-                        // Token has been serviced long enough, move it to the next step
-                        SimNodeBase targetNode = null;
-                        
-                        switch (node)
+                        var placesInQueue = StartNode.WaitingQueue.SpaceInQueue;
+
+                        if (tokensToQueue.Count() < placesInQueue)
                         {
-                            case ActivitySimNode:
-                            case EventSimNode:
-                                targetNode = node.OutboundFlows.First().TargetNode as SimNodeBase;                                
-                                break;
-                            case GatewaySimNode g:
-                                targetNode = g.SelectOutboundNode().TargetNode as SimNodeBase;
-                                break;                            
-                        }
+                            var tokensToAdd = tokensToQueue.Take(placesInQueue);
+                            foreach (var token in tokensToAdd)
+                            {
+                                token.MaxWaitTime = _settings.TokenMaxQueueTime;
+                                token.CurrentLocation = StartNode;
+                                token.Status = SimTokenStatus.InQueue;
+                                StartNode.WaitingQueue.AddTokenToQueue(token);
+                            }
 
-                        ArgumentNullException.ThrowIfNull(targetNode);
+                            if (StartNode.IsStatsEnabled)
+                            {
+                                foreach (var token in tokensToQueue.Except(tokensToAdd))
+                                {
+                                    //TODO: Possibly log detailed information about the lost
+                                    // queue events to an Azure Table.
 
-                        if (targetNode.WaitingQueue.SpaceInQueue > 0)
-                        {
-                            //There is space in the next node's waiting queue, so move this token there
-                            // First, update the statistics for this node
-                            if (node.IsStatsEnabled)
-                                node.Stats.NumberOfExecutions++;
-
-                            var completedToken = node.ExecutionQueue.DequeueToken(queueItem);
-                            targetNode.WaitingQueue.AddTokenToQueue(completedToken);
+                                    StartNode.Stats.NumberOfQueueOverflows += 1;
+                                }
+                            }
                         }
                         else
                         {
-                            // No space in the next node's queue, so do nothing.
-                            // What's expected to happen is that the token stays in the ExecutionQueue of the
-                            // current node, and keeps incrementing its execution time
+                            foreach (var token in tokensToQueue)
+                                StartNode.WaitingQueue.AddTokenToQueue(token);
+                        }
+
+                        if (StartNode.IsStatsEnabled && StartNode.WaitingQueue.QueueLength > StartNode.Stats.MaximumTokensInQueue)
+                            StartNode.Stats.MaximumTokensInQueue = StartNode.WaitingQueue.QueueLength;
+                    }
+                }
+
+                bool continueProcessing = true;
+                int changesThisIteration = 0;
+
+                while (continueProcessing)
+                {
+                    // 2. Iterate through all tokens and take the relevant actions            
+                    foreach (SimNodeBase node in Nodes)
+                    {
+                        // Ignore the node if there are no tokens in the waiting or execution queues
+                        if (node.WaitingQueue.QueueLength > 0 || node.ExecutionQueue.QueueLength > 0)
+                        {
+                            // 2.1 Abandon tokens
+                            var abandoningTokens = node.WaitingQueue.DequeueAbandoningTokens(_settings.TimeFactor);
+
+                            if (abandoningTokens.Count() > 0 && node.IsStatsEnabled)
+                                node.Stats.NumberOfQueueAbandons += abandoningTokens.Count();
+
+                            foreach (SimToken token in abandoningTokens)
+                            {
+                                token.Status = SimTokenStatus.Abandoned;
+                                changesThisIteration++;
+                            }
+
+
+                            // Only ActivitySimNodes need to execute tokens
+                            // Iterate through the tokens being executed, and determine if they are done
+                            foreach (NodeQueueItem queueItem in node.ExecutionQueue)
+                            {
+                                if ((queueItem.CyclesInQueue * _settings.TimeFactor) >= node.ExecutionTime)
+                                {
+                                    // Token has been serviced long enough, move it to the next step
+                                    SimNodeBase targetNode = null;
+
+                                    switch (node)
+                                    {
+                                        case ActivitySimNode:
+                                        case EventSimNode:
+                                            targetNode = node.OutboundFlows.First().TargetNode as SimNodeBase;
+                                            break;
+                                        case GatewaySimNode g:
+                                            targetNode = g.SelectOutboundNode().TargetNode as SimNodeBase;
+                                            break;
+                                    }
+
+                                    // sanity check
+                                    ArgumentNullException.ThrowIfNull(targetNode);
+
+                                    if (targetNode.WaitingQueue.SpaceInQueue > 0)
+                                    {
+                                        //There is space in the next node's waiting queue, so move this token there
+                                        // First, update the statistics for this node
+                                        if (node.IsStatsEnabled)
+                                            node.Stats.NumberOfExecutions++;
+
+                                        var completedToken = node.ExecutionQueue.DequeueToken(queueItem);
+                                        (completedToken as SimToken).Status = SimTokenStatus.InQueue;
+                                        (completedToken as SimToken).CurrentLocation = targetNode;
+                                        targetNode.WaitingQueue.AddTokenToQueue(completedToken);
+                                        changesThisIteration++;
+                                    }
+                                    else
+                                    {
+                                        // No space in the next node's queue, so do nothing.
+                                        // What's expected to happen is that the token stays in the ExecutionQueue of the
+                                        // current node, and keeps incrementing its execution time
+                                    }
+                                }
+                            }
+
+
+                            // Check if the node has enough resources to service another token
+                            if (node.ExecutionQueue.SpaceInQueue > 0 && node.WaitingQueue.HasItemsInQueue)
+                            {
+                                // Move items from the WaitingQueue into the ServicingQueue
+                                for (int i = 0; i < Math.Min(node.ExecutionQueue.SpaceInQueue, node.WaitingQueue.QueueLength); i++)
+                                {
+                                    var nextToken = node.WaitingQueue.DequeueTokenNextInLine();
+                                    (nextToken as SimToken).Status = SimTokenStatus.Active;
+                                    (nextToken as SimToken).CurrentLocation = node;
+                                    node.ExecutionQueue.AddTokenToQueue(nextToken);
+                                    changesThisIteration++;
+                                }
+                            }
                         }
                     }
+
+                    if (changesThisIteration == 0)
+                        continueProcessing = false;
+                    else
+                        changesThisIteration = 0;
+
                 }
 
-                // Check if the node has enough resources to service another token
-                if (node.ExecutionQueue.SpaceInQueue > 0)
+                // 3. Determine if simulation should continue
+                if (State.CurrentDateTime >= _settings.EndDateTime)
                 {
-                    // Move items from the WaitingQueue into the ServicingQueue
-                    for (int i = 0; i <= node.ExecutionQueue.SpaceInQueue; i++)
-                    {
-                        node.ExecutionQueue.AddTokenToQueue(node.WaitingQueue.DequeueTokenNextInLine());
-                    }
+                    continueExecution = false;
+                }
+
+                if (State.CurrentIteration >= _settings.MaximumIterations)
+                {
+                    continueExecution = false;
                 }
             }
 
-            // 3. Determine if simulation should continue
-            if (State.CurrentDateTime >= _settings.EndDateTime)
-            {
-                // end simulation based on end date
-            }
-
-            if (State.CurrentIteration >= _settings.MaximumIterations)
-            {
-                // end simulation based on max iterations
-            }
+            Trace.WriteLine("Simulation complete.");
         }
 
         /// <summary>

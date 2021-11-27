@@ -1685,19 +1685,24 @@ namespace FaaSDES.UI.ViewModel
                         var simulator = FaaSDES.Sim.Simulator.FromBpmnXML(fileStream);
 
                         var tokenGenerator = new TimerSimTokenGenerator(
-                            new GenerationSettings(),
-                            new TimeOnly(),
-                            new TimeOnly(),
+                            new GenerationSettings(0, 5),
+                            new TimeOnly(8,0),
+                            new TimeOnly(15,0),
                             new WeekDaySchedule(true, true, true, true, true, false, false));
 
                         var simSettings = new Sim.SimulationSettings()
                         {
                             StartDateTime = new DateTime(2021, 01, 01),
                             EndDateTime = new DateTime(2023, 12, 31),
-                            MaximumIterations = int.MaxValue
+                            MaximumIterations = int.MaxValue,
+                            TimeFactor = new TimeSpan(0, 5, 0),
+                            TokenMaxQueueTime = new TimeSpan(0, 25, 0)
                         };
 
+                        
                         var simulation = simulator.NewSimulationInstance(simSettings, tokenGenerator);
+
+                        simulation.Execute();
 
 
                     }

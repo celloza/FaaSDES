@@ -16,18 +16,20 @@ namespace FaaSDES.Sim.Nodes.GatewayProbabilityDistributions
 
         public double Generate()
         {
-            var leastOption = _selectionHistory.MinBy(x => x.Value);
-            return leastOption.Key;
+            throw new NotImplementedException();
         }
 
         public EvenSplit(int numberOfOptions)
         {
+            _selectionHistory = new int[numberOfOptions, 2];
+
             for (int i = 0; i < numberOfOptions; i++)
             {
-                _selectionHistory.Add(i, 0);
+                _selectionHistory[i, 0] = i;
+                _selectionHistory[i, 1] = 0;
             }
         }
 
-        private Dictionary<int, int> _selectionHistory = new();
+        private int[,] _selectionHistory;
     }
 }

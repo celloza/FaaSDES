@@ -34,7 +34,7 @@ namespace FaaSDES.Sim.Tokens
         /// The maximum number of simulation cycles that this token is willing to wait
         /// in a queue. When moving to another queue, this value should be reset to 0.
         /// </summary>
-        public int MaxWaitTime { get; set; } = int.MaxValue;
+        public TimeSpan MaxWaitTime { get; set; } = TimeSpan.MaxValue;
 
         /// <summary>
         /// The number of cycles a token has progressed through.
