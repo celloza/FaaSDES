@@ -10,7 +10,6 @@ namespace FaaSDES.Sim.Nodes
 {
     public class StartSimNode : SimNodeBase
     {
-        public new StartSimNodeStats Stats { get; set; }
 
         public override void EnableStats()
         {
@@ -28,6 +27,7 @@ namespace FaaSDES.Sim.Nodes
         {
             OutboundFlows = new List<SequenceFlow>();
             InboundFlows = new List<SequenceFlow>();
+            ExecutionTime = TimeSpan.Zero;
         }        
 
         #endregion

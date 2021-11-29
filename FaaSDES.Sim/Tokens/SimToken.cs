@@ -41,5 +41,7 @@ namespace FaaSDES.Sim.Tokens
         /// </summary>
         public int Age { get; set; } = 0;
 
+        public SimTokenStats Stats { get; set; } = new SimTokenStats();
+
     }
 }

@@ -10,7 +10,7 @@ namespace FaaSDES.Sim.Nodes.GatewayProbabilityDistributions
     {
         public SequenceFlow ChooseSequenceFlow(IEnumerable<SequenceFlow> sequenceFlows)
         {
-            return sequenceFlows.ElementAt(_random.Next());
+            return sequenceFlows.ElementAt(_random.Next(1, sequenceFlows.Count()));
         }
 
         public double Generate()

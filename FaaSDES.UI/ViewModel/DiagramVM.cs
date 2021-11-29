@@ -1696,7 +1696,7 @@ namespace FaaSDES.UI.ViewModel
                             EndDateTime = new DateTime(2023, 12, 31),
                             MaximumIterations = int.MaxValue,
                             TimeFactor = new TimeSpan(0, 5, 0),
-                            TokenMaxQueueTime = new TimeSpan(0, 25, 0)
+                            TokenMaxQueueTime = new TimeSpan(1, 30, 0)
                         };
 
                         

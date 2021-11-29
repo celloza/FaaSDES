@@ -4,9 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FaaSDES.Sim.NodeStatistics
+namespace FaaSDES.Sim.Tokens.Generation
 {
-    public class StartSimNodeStats : SimNodeStatsBase
+    public class SimTokenGeneratorStats
     {
+
     }
 }

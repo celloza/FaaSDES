@@ -32,6 +32,8 @@ namespace FaaSDES.Sim
         /// </summary>
         public SimulationState State { get; set; }
 
+        public IEnumerable<ISimToken> CompletedTokens { get; set; }
+
         /// <summary>
         /// Executes this simulation.
         /// </summary>
@@ -63,11 +65,15 @@ namespace FaaSDES.Sim
                     {
                         queueItem.CyclesInQueue++;
                         (queueItem.TokenInQueue as SimToken).Age++;
+                        (queueItem.TokenInQueue as SimToken).Stats.TotalWaitTime += _settings.TimeFactor;
+
+
                     }
                     foreach (NodeQueueItem queueItem in node.ExecutionQueue)
                     {
                         queueItem.CyclesInQueue++;
                         (queueItem.TokenInQueue as SimToken).Age++;
+                        (queueItem.TokenInQueue as SimToken).Stats.TotalWaitTime += _settings.TimeFactor;
                     }
                 }
 
@@ -88,7 +94,15 @@ namespace FaaSDES.Sim
                                 token.MaxWaitTime = _settings.TokenMaxQueueTime;
                                 token.CurrentLocation = StartNode;
                                 token.Status = SimTokenStatus.InQueue;
+                                token.Stats.GenerationDate = State.CurrentDateTime;
                                 StartNode.WaitingQueue.AddTokenToQueue(token);
+                                if (StartNode.IsStatsEnabled)
+                                {
+                                    StartNode.Stats.AddEventStat(
+                                        State.CurrentDateTime,
+                                        NodeStatistics.EventStatisticType.TokenJoinedWaitingQueue,
+                                        StartNode.Id);
+                                }
                             }
 
                             if (StartNode.IsStatsEnabled)
@@ -96,9 +110,14 @@ namespace FaaSDES.Sim
                                 foreach (var token in tokensToQueue.Except(tokensToAdd))
                                 {
                                     //TODO: Possibly log detailed information about the lost
-                                    // queue events to an Azure Table.
 
-                                    StartNode.Stats.NumberOfQueueOverflows += 1;
+                                    //StartNode.Stats.NumberOfQueueOverflows += 1;
+
+                                    StartNode.Stats.AddEventStat(
+                                        State.CurrentDateTime,
+                                        NodeStatistics.EventStatisticType.QueueOverflow,
+                                        StartNode.Id);
+
                                 }
                             }
                         }
@@ -108,8 +127,8 @@ namespace FaaSDES.Sim
                                 StartNode.WaitingQueue.AddTokenToQueue(token);
                         }
 
-                        if (StartNode.IsStatsEnabled && StartNode.WaitingQueue.QueueLength > StartNode.Stats.MaximumTokensInQueue)
-                            StartNode.Stats.MaximumTokensInQueue = StartNode.WaitingQueue.QueueLength;
+                        //if (StartNode.IsStatsEnabled && StartNode.WaitingQueue.QueueLength > StartNode.Stats.MaximumTokensInQueue)
+                        //    StartNode.Stats.MaximumTokensInQueue = StartNode.WaitingQueue.QueueLength;
                     }
                 }
 
@@ -128,11 +147,18 @@ namespace FaaSDES.Sim
                             var abandoningTokens = node.WaitingQueue.DequeueAbandoningTokens(_settings.TimeFactor);
 
                             if (abandoningTokens.Count() > 0 && node.IsStatsEnabled)
-                                node.Stats.NumberOfQueueAbandons += abandoningTokens.Count();
+                            {
+                                node.Stats.AddEventStat(
+                                       State.CurrentDateTime,
+                                       NodeStatistics.EventStatisticType.QueueAbandon,
+                                       node.Id);
+                            }
 
                             foreach (SimToken token in abandoningTokens)
                             {
                                 token.Status = SimTokenStatus.Abandoned;
+                                token.Stats.EndReason = TokenEndReason.Abandoned;
+                                token.Stats.EndDate = State.CurrentDateTime;
                                 changesThisIteration++;
                             }
 
@@ -148,29 +174,61 @@ namespace FaaSDES.Sim
 
                                     switch (node)
                                     {
+                                        case StartSimNode:
                                         case ActivitySimNode:
                                         case EventSimNode:
                                             targetNode = node.OutboundFlows.First().TargetNode as SimNodeBase;
                                             break;
                                         case GatewaySimNode g:
-                                            targetNode = g.SelectOutboundNode().TargetNode as SimNodeBase;
+                                            if (g.OutboundFlows.Count() > 1)
+                                                targetNode = g.SelectOutboundNode().TargetNode as SimNodeBase;
+                                            else
+                                                targetNode = g.OutboundFlows.First().TargetNode as SimNodeBase;
                                             break;
                                     }
 
                                     // sanity check
                                     ArgumentNullException.ThrowIfNull(targetNode);
 
-                                    if (targetNode.WaitingQueue.SpaceInQueue > 0)
+                                    if ((targetNode is EventSimNode) && (targetNode as EventSimNode).Type == EventSimNodeType.End)
+                                    {
+                                        // token has reached the end event
+                                        var completedToken = node.ExecutionQueue.DequeueToken(queueItem);
+                                        (completedToken as SimToken).Stats.EndReason = TokenEndReason.Completed;
+                                        (completedToken as SimToken).Stats.EndDate = State.CurrentDateTime;
+                                        // record some stats here
+                                        (CompletedTokens as List<ISimToken>).Add(completedToken);
+                                    }
+                                    else if (targetNode.WaitingQueue.SpaceInQueue > 0)
                                     {
                                         //There is space in the next node's waiting queue, so move this token there
                                         // First, update the statistics for this node
                                         if (node.IsStatsEnabled)
-                                            node.Stats.NumberOfExecutions++;
+                                        {
+                                            node.Stats.AddEventStat(
+                                                   State.CurrentDateTime,
+                                                   NodeStatistics.EventStatisticType.TokenLeftExecutionQueue,
+                                                   node.Id);
+
+                                            node.Stats.AddEventStat(
+                                                   State.CurrentDateTime,
+                                                   NodeStatistics.EventStatisticType.NodeExecuted,
+                                                   node.Id);
+                                        }
 
                                         var completedToken = node.ExecutionQueue.DequeueToken(queueItem);
                                         (completedToken as SimToken).Status = SimTokenStatus.InQueue;
                                         (completedToken as SimToken).CurrentLocation = targetNode;
                                         targetNode.WaitingQueue.AddTokenToQueue(completedToken);
+
+                                        if (targetNode.IsStatsEnabled)
+                                        {
+                                            targetNode.Stats.AddEventStat(
+                                                   State.CurrentDateTime,
+                                                   NodeStatistics.EventStatisticType.TokenJoinedWaitingQueue,
+                                                   targetNode.Id);
+                                        }
+
                                         changesThisIteration++;
                                     }
                                     else
@@ -179,6 +237,11 @@ namespace FaaSDES.Sim
                                         // What's expected to happen is that the token stays in the ExecutionQueue of the
                                         // current node, and keeps incrementing its execution time
                                     }
+
+                                }
+                                else
+                                {
+                                    queueItem.CyclesInQueue++;
                                 }
                             }
 
@@ -193,6 +256,18 @@ namespace FaaSDES.Sim
                                     (nextToken as SimToken).Status = SimTokenStatus.Active;
                                     (nextToken as SimToken).CurrentLocation = node;
                                     node.ExecutionQueue.AddTokenToQueue(nextToken);
+                                    if (node.IsStatsEnabled)
+                                    {
+                                        node.Stats.AddEventStat(
+                                               State.CurrentDateTime,
+                                               NodeStatistics.EventStatisticType.TokenLeftWaitingQueue,
+                                               node.Id);
+
+                                        node.Stats.AddEventStat(
+                                               State.CurrentDateTime,
+                                               NodeStatistics.EventStatisticType.TokenJoinedExecutionQueue,
+                                               node.Id);
+                                    }
                                     changesThisIteration++;
                                 }
                             }
@@ -237,6 +312,8 @@ namespace FaaSDES.Sim
                 CurrentDateTime = settings.StartDateTime,
                 CurrentIteration = 0
             };
+
+            CompletedTokens = new List<ISimToken>();
         }
 
         private readonly ISimTokenGenerator _tokenGenerator;
