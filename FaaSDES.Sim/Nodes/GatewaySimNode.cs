@@ -13,20 +13,14 @@ namespace FaaSDES.Sim.Nodes
     /// </summary>
     public class GatewaySimNode : SimNodeBase
     {
-
         public GatewaySimNodeType Type { get; set; }
-
-        /// <summary>
-        /// The <see cref="GatewaySimNodeStats"/> for this node.
-        /// </summary>
-        public new GatewaySimNodeStats Stats { get; set; }
 
         public override void EnableStats()
         {
             if (!_isStatsEnabled)
             {
                 _isStatsEnabled = true;
-                Stats = new();
+                Stats = new GatewaySimNodeStats();
             }
         }
 
@@ -49,22 +43,10 @@ namespace FaaSDES.Sim.Nodes
 
         #region Constructors
 
-        public GatewaySimNode(string id, string name,
-                IEnumerable<SequenceFlow> inboundFlows, IEnumerable<SequenceFlow> outboundFlows)
-            : base(id, name, inboundFlows, outboundFlows)
-        { }
-
-        public GatewaySimNode(string id, string name)
-           : base(id, name, null, null)
-        {
-            OutboundFlows = new List<SequenceFlow>();
-            InboundFlows = new List<SequenceFlow>();
-        }
-
-        public GatewaySimNode(Simulation simulation, string id, string name, GatewaySimNodeType type)
+        public GatewaySimNode(Simulation simulation, string id, string name)
             : base(simulation, id, name)
         {
-            Type = type;
+            ExecutionTime = TimeSpan.Zero;
         }
 
         #endregion

@@ -59,7 +59,7 @@ namespace FaaSDES.Sim.Nodes
         /// overriden in classes inheriting from this class to provide more topical
         /// statistics.
         /// </summary>
-        public SimNodeStatsBase Stats { get; set; }
+        public SimNodeStats Stats { get; set; }
 
         /// <summary>
         /// The <see cref="NodeQueue"/> containing all the tokens in the queue to be 
@@ -134,6 +134,7 @@ namespace FaaSDES.Sim.Nodes
             WaitingQueue = new NodeQueue();
             ExecutionQueue = new NodeQueue();
             ExecutionTime = new TimeSpan(0, 5, 0);
+
         }
 
         public SimNodeBase(Simulation simulation, string id, string name)

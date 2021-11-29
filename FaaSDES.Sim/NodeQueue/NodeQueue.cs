@@ -15,7 +15,7 @@ namespace FaaSDES.Sim.Nodes
     /// This is important since some items can be abandoned if waiting too long in the
     /// queue.
     /// </summary>
-    public class NodeQueue: IEnumerator
+    public class NodeQueue: IEnumerable<NodeQueueItem>, IEnumerable
     {
         /// <summary>
         /// Returns how many items are currently in the queue.
@@ -52,7 +52,7 @@ namespace FaaSDES.Sim.Nodes
                     new NodeQueueItem() { TokenInQueue = token });
             else
             _itemsInQueue.Add(_itemsInQueue.Keys.Max() + 1,
-                new NodeQueueItem() { TokenInQueue = token });
+                new NodeQueueItem() { TokenInQueue = token });            
         }
 
         /// <summary>
@@ -139,24 +139,17 @@ namespace FaaSDES.Sim.Nodes
 
         #region IEnumerator Implementation
 
-        public IEnumerator GetEnumerator()
+        public IEnumerator<NodeQueueItem> GetEnumerator()
         {
-            return (IEnumerator)this;
-        }
-        public object Current
-        {
-            get { return _itemsInQueue.Single(x => x.Key == _currentPosition).Value; }
-        }
-
-        public bool MoveNext()
-        {
-            _currentPosition++;
-            return _currentPosition <= _itemsInQueue.Count;
+            foreach(KeyValuePair<int, NodeQueueItem> item in this._itemsInQueue)
+            {
+                yield return item.Value;
+            }
         }
 
-        public void Reset()
+        IEnumerator IEnumerable.GetEnumerator()
         {
-            _currentPosition = _itemsInQueue.Keys.Min();
+            return this.GetEnumerator();
         }
 
         #endregion
@@ -187,7 +180,6 @@ namespace FaaSDES.Sim.Nodes
 
         private readonly Dictionary<int, NodeQueueItem> _itemsInQueue;
         private int _maxQueueLength = int.MaxValue;
-        private int _currentPosition;
 
         #endregion
     }

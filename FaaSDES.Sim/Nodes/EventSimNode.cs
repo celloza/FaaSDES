@@ -9,11 +9,6 @@ namespace FaaSDES.Sim.Nodes
 {
     public class EventSimNode : SimNodeBase
     {
-        /// <summary>
-        /// The <see cref="EventSimNodeStats"/> for this node.
-        /// </summary>
-        public new EventSimNodeStats Stats { get; set; }
-
         public EventSimNodeType Type { get; set; }
 
         public EventSimNodeTrigger Trigger { get; set; } = EventSimNodeTrigger.None;
@@ -29,23 +24,11 @@ namespace FaaSDES.Sim.Nodes
 
         #region Constructors
 
-        public EventSimNode(string id, string name,
-            IEnumerable<SequenceFlow> inboundFlows, IEnumerable<SequenceFlow> outboundFlows)
-            : base(id, name, inboundFlows, outboundFlows)
-        { }
-
-        public EventSimNode(string id, string name)
-           : base(id, name, null, null)
-        {
-            OutboundFlows = new List<SequenceFlow>();
-            InboundFlows = new List<SequenceFlow>();
-        }
-
         public EventSimNode(Simulation simulation, string id, string name)
            : base(simulation, id, name)
-        { }
-
-        
+        {
+            ExecutionTime = TimeSpan.Zero;
+        }       
 
         #endregion
     }

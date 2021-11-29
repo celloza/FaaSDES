@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace FaaSDES.Sim.NodeStatistics
 {
-    public class GatewaySimNodeStats : SimNodeStatsBase
+    public class GatewaySimNodeStats : SimNodeStats
     {
         /// <summary>
         /// Records the frequency of each outbound destination.

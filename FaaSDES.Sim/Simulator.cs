@@ -111,8 +111,7 @@ namespace FaaSDES.Sim
                 ActivitySimNode node = new(sim, activity.Attribute("id").Value,
                    activity.Name.LocalName);
 
-                // TEMPORARY FIX: Introduce a hard-coded 1 resource limit per activity node
-                node.SetQueueMaximums(int.MaxValue, 1);
+                
 
                 switch (activity.Name.LocalName)
                 {
@@ -146,42 +145,38 @@ namespace FaaSDES.Sim
                 }
 
                 LinkSequenceFlows(node, activity, flows);
+                node.EnableStats();
+                // TEMPORARY FIX: This should come from the simulation parameters or something
+                node.ExecutionTime = TimeSpan.FromSeconds(new Random().NextInt64(1800));
+                // TEMPORARY FIX: Introduce a hard-coded 1 resource limit per activity node
+                node.SetQueueMaximums(int.MaxValue, 1);
+
                 nodes.Add(node);
             }
 
-            // find all exclusiveGateways
-            var exclusiveGateways = source.Elements().Where(x => x.Name == BpmnNamespace + "exclusiveGateway");
-            foreach (var exclusiveGateway in exclusiveGateways)
+            var gatewayNodes = source.Elements().Where(x => x.Name.LocalName.EndsWith("Gateway", StringComparison.OrdinalIgnoreCase));
+            foreach (var gatewayNode in gatewayNodes)
             {
-                GatewaySimNode node = new(sim, exclusiveGateway.Attribute("id").Value,
-                   exclusiveGateway.Name.LocalName, GatewaySimNodeType.Exclusive);
-                LinkSequenceFlows(node, exclusiveGateway, flows);
-                // TEMPORARY FIX: This should come from the simulation parameters or something
-                node.SetGatewayProbabilityDistribution(new FaaSDES.Sim.Nodes.GatewayProbabilityDistributions.Random());
-                nodes.Add(node);
-            }
+                GatewaySimNode node = new(sim, gatewayNode.Attribute("id").Value,
+                   gatewayNode.Name.LocalName);
 
-            // find all inclusiveGateways
-            var inclusiveGateways = source.Elements().Where(x => x.Name == BpmnNamespace + "inclusiveGateway");
-            foreach (var inclusiveGateway in inclusiveGateways)
-            {
-                GatewaySimNode node = new(sim, inclusiveGateway.Attribute("id").Value,
-                   inclusiveGateway.Name.LocalName, GatewaySimNodeType.Inclusive);
-                LinkSequenceFlows(node, inclusiveGateway, flows);
-                // TEMPORARY FIX: This should come from the simulation parameters or something
-                node.SetGatewayProbabilityDistribution(new FaaSDES.Sim.Nodes.GatewayProbabilityDistributions.Random());
-                nodes.Add(node);
-            }
+                switch (gatewayNode.Name.LocalName)
+                {
+                    case "exclusiveGateway":
+                        node.Type = GatewaySimNodeType.Exclusive;
+                        break;
+                    case "inclusiveGateway":
+                        node.Type = GatewaySimNodeType.Inclusive;
+                        break;
+                    case "parallelGateway":
+                        node.Type = GatewaySimNodeType.Parallel;
+                        break;
+                }
 
-            // find all parallelGateways
-            var parallelGateways = source.Elements().Where(x => x.Name == BpmnNamespace + "parallelGateway");
-            foreach (var parallelGateway in parallelGateways)
-            {
-                GatewaySimNode node = new(sim, parallelGateway.Attribute("id").Value,
-                   parallelGateway.Name.LocalName, GatewaySimNodeType.Parallel);
-                LinkSequenceFlows(node, parallelGateway, flows);
                 // TEMPORARY FIX: This should come from the simulation parameters or something
                 node.SetGatewayProbabilityDistribution(new FaaSDES.Sim.Nodes.GatewayProbabilityDistributions.Random());
+                LinkSequenceFlows(node, gatewayNode, flows);
+                node.EnableStats();
                 nodes.Add(node);
             }
 
@@ -209,6 +204,8 @@ namespace FaaSDES.Sim
                 }
 
                 LinkSequenceFlows(node, eventNode, flows);
+
+                node.EnableStats();
 
                 if (node.Type != EventSimNodeType.Start)
                     nodes.Add(node);
