@@ -10,8 +10,7 @@
          xmlns:skinmanager="clr-namespace:Syncfusion.SfSkinManager;assembly=Syncfusion.SfSkinManager.WPF"
         skinmanager:SfSkinManager.VisualStyle="Office2019Colorful"
         mc:Ignorable="d"
-         Icon="App.ico"
-        Title="MainWindow" Height="450" Width="800">
+        Title="FaaSDES UI" Height="450" Width="800">
     <Window.DataContext>
         <viewmodel:DiagramVM></viewmodel:DiagramVM>
     </Window.DataContext>

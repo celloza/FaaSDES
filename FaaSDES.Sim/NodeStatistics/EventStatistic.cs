@@ -10,9 +10,13 @@ namespace FaaSDES.Sim.NodeStatistics
     {
         public DateTime DateOfOccurence { get; set; }
 
-        public EventStatisticType Type { get; set; }
-
         public string NodeName { get; set; }
+
+        public EventStatisticType Type
+        {
+            get;
+            set;
+        }
 
         public EventStatistic(DateTime dateOfOccurence, EventStatisticType type, string nodeName)
         {

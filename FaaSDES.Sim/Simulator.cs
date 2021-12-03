@@ -26,8 +26,7 @@ namespace FaaSDES.Sim
         /// contains settings controlling the <see cref="Simulator"/>.</param>
         public static Simulator FromBpmnXML(FileStream streamToFile)
         {
-            if (streamToFile == null)
-                throw new ArgumentNullException(nameof(streamToFile));
+            ArgumentNullException.ThrowIfNull(nameof(streamToFile));
 
             Simulator simulator = new();
 
@@ -46,27 +45,25 @@ namespace FaaSDES.Sim
             return simulator;
         }
 
-        /// <summary>
-        /// Initializes the class with the provided BPMN XML FileStream object.
-        /// </summary>
-        /// <param name="streamToFile"></param>
-        /// <exception cref="ArgumentNullException"></exception>
-        /// <exception cref="InvalidOperationException"></exception>
-        public void BuildSimulatorFromBpmnXml(FileStream streamToFile)
+        public static Simulator FromBpmnXML(string xmlContent)
         {
-            if (streamToFile == null)
-                throw new ArgumentNullException(nameof(streamToFile));
+            ArgumentNullException.ThrowIfNull(nameof(xmlContent));
 
-            XDocument doc = XDocument.Load(streamToFile);
-            BpmnNamespace = @"http://www.omg.org/spec/BPMN/20100524/MODEL";
+            Simulator simulator = new();
 
-            if (doc.Root == null || doc.Root.Element(BpmnNamespace + "process") == null)
+            simulator.BpmnNamespace = @"http://www.omg.org/spec/BPMN/20100524/MODEL";
+
+            XDocument doc = XDocument.Parse(xmlContent);
+
+            if (doc.Root == null || doc.Root.Element(simulator.BpmnNamespace + "process") == null)
                 throw new InvalidOperationException("The provided XML file does not contain a root process node.");
             else
             {
-                SourceBpmn = doc.Root.Element(BpmnNamespace + "process");
-                Properties = PropertyInitializer(SourceBpmn);
+                simulator.SourceBpmn = doc.Root.Element(simulator.BpmnNamespace + "process");
+                simulator.Properties = simulator.PropertyInitializer(simulator.SourceBpmn);
             }
+
+            return simulator;
         }
 
         /// <summary>

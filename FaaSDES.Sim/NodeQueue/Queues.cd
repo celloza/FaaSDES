@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="FaaSDES.Sim.Nodes.NodeQueue">
+    <Position X="8.75" Y="2.75" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>BAAAAAAABAAAABAACAACAAAAAAkAAAgEAEAACAQAgEA=</HashCode>
+      <FileName>NodeQueue\NodeQueue.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="FaaSDES.Sim.Nodes.NodeQueueItem">
+    <Position X="12.25" Y="4" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAIAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>NodeQueue\NodeQueueItem.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

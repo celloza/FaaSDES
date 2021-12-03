@@ -1695,17 +1695,28 @@ namespace FaaSDES.UI.ViewModel
                             StartDateTime = new DateTime(2021, 01, 01),
                             EndDateTime = new DateTime(2023, 12, 31),
                             MaximumIterations = int.MaxValue,
-                            TimeFactor = new TimeSpan(0, 5, 0),
+                            TimeFactor = new TimeSpan(0, 1, 0),
                             TokenMaxQueueTime = new TimeSpan(1, 30, 0)
                         };
 
                         
                         var simulation = simulator.NewSimulationInstance(simSettings, tokenGenerator);
 
-                        simulation.Execute();
+                        //simulation.Execute();
 
 
                     }
+
+                    var url = "http://localhost:7071/api/ExecuteSimulation";
+                    var client = new RestSharp.RestClient(url);
+                    var request = new RestSharp.RestRequest(RestSharp.Method.POST);
+                    //request.AddHeader("x-functions-key", securityCode);
+                    //request.AddQueryParameter("ResourceGroupName", "ImageStormSource");
+
+                    request.AddParameter("text/xml", File.ReadAllText(this._SavedPath), RestSharp.ParameterType.RequestBody);
+
+
+                    var response = client.Execute(request);
                 }
                 else
                 {
