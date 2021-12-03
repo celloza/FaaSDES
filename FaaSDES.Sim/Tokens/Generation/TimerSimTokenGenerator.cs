@@ -92,6 +92,14 @@
             }
         }
 
+        public override string ToString()
+        {
+            return $"TimerSimTokenGenerator with settings: \n\r" +
+                $"{DaysOfWeek} \n\r" +
+                $"Generate tokens between {StartTime} and {EndTime} \n\r" +
+                $"{_settings}";
+        }
+
         private readonly GenerationSettings _settings;
         private readonly Random random = new Random();
     }

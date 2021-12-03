@@ -67,5 +67,17 @@
         {
             return activeDays[dayToCheck];
         }
+
+        public override string ToString()
+        {
+            return $"Daily schedule: \n\r" +
+                $"Monday: {ActiveOnMonday} \n\r" +
+                $"Tuesday: {ActiveOnTuesday} \n\r" +
+                $"Wednesday: {ActiveOnWednesday} \n\r" +
+                $"Thursday: {ActiveOnThursday} \n\r" +
+                $"Friday: {ActiveOnFriday} \n\r" +
+                $"Saturday: {ActiveOnSaturday} \n\r" +
+                $"Sunday: {ActiveOnSunday}";
+        }
     }
 }

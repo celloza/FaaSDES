@@ -30,5 +30,15 @@
         /// a queue before it needs to be abandoned.
         /// </summary>
         public TimeSpan TokenMaxQueueTime { get; set; } = TimeSpan.MaxValue;
+
+        public override string ToString()
+        {
+            return $"Simulation settings: \n\r" +
+                $"Maximum iterations: {MaximumIterations} \n\r" +
+                $"Start time: {StartDateTime.ToShortDateString()} \n\r" +
+                $"End time: {EndDateTime.ToShortDateString()} \n\r" +
+                $"Time factor: {TimeFactor} \n\r" +
+                $"Maximum time tokens will wait for: {TokenMaxQueueTime}";
+        }
     }
 }

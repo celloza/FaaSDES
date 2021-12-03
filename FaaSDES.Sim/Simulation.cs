@@ -5,7 +5,10 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace FaaSDES.Sim
@@ -294,6 +297,25 @@ namespace FaaSDES.Sim
             }
 
             Trace.WriteLine("Simulation complete.");
+        }
+
+        public string Serialize()
+        {
+            JsonSerializerOptions options = new()
+            {
+                ReferenceHandler = ReferenceHandler.IgnoreCycles,
+                WriteIndented = true
+            };
+
+            return JsonSerializer.Serialize(this, options);
+        }
+
+        public override string ToString()
+        {
+            return $"Simulation details: \n\r" +
+                $"No of activity nodes: {Nodes.Count(x => x is ActivitySimNode)} \n\r" +
+                $"No of gateway nodes: {Nodes.Count(x => x is GatewaySimNode)} \n\r" +
+                $"No of event nodes: {Nodes.Count(x => x is EventSimNode)} \n\r";
         }
 
         /// <summary>

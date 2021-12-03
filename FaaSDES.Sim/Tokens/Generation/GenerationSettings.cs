@@ -27,5 +27,14 @@ namespace FaaSDES.Sim.Tokens.Generation
             MaximumTokensPerGeneration = maximumTokensPerGeneration;
         }
 
+        public override string ToString()
+        {
+            //TODO: return actual name of distribution
+            return $"Token generator settings: \n\r" +
+                $"Minimum tokens to generate per generation: {MinimumTokensPerGeneration} \n\r" +
+                $"Maximum tokens to generate per generation: {MaximumTokensPerGeneration} \n\r" +
+                $"Probabalistic distribution method: Random";
+        }
+
     }
 }

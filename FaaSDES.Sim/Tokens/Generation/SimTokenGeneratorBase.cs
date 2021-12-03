@@ -17,6 +17,9 @@ namespace FaaSDES.Sim.Tokens.Generation
 
         public abstract IEnumerable<SimToken> GetNextTokens(SimulationState state);
 
+        public abstract override string ToString();
+        
+
         public void Start()
         {
             _isGeneratingTokens = true;
