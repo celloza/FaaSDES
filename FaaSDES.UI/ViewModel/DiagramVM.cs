@@ -19,6 +19,7 @@ using Syncfusion.Pdf;
 using FaaSDES.UI.Nodes;
 using System.Diagnostics;
 using FaaSDES.Sim.Tokens.Generation;
+using FaaSDES.Sim;
 
 namespace FaaSDES.UI.ViewModel
 {
@@ -1707,13 +1708,15 @@ namespace FaaSDES.UI.ViewModel
 
                     }
 
-                    var url = "http://localhost:7071/api/ExecuteSimulation";
+                    var url = "http://localhost:7071/api/SimulationOrchestrator_HttpStart";
                     var client = new RestSharp.RestClient(url);
                     var request = new RestSharp.RestRequest(RestSharp.Method.POST);
                     //request.AddHeader("x-functions-key", securityCode);
                     //request.AddQueryParameter("ResourceGroupName", "ImageStormSource");
 
-                    request.AddParameter("text/xml", File.ReadAllText(this._SavedPath), RestSharp.ParameterType.RequestBody);
+                    SimulationRequest simRequest = new(File.ReadAllText(this._SavedPath)) ;
+
+                    request.AddJsonBody(simRequest); 
 
 
                     var response = client.Execute(request);
