@@ -1,5 +1,8 @@
 ﻿namespace FaaSDES.Sim
 {
+    /// <summary>
+    /// A collection of settings for a specific <see cref="Simulation"/>.
+    /// </summary>
     public class SimulationSettings
     {
         /// <summary>
@@ -31,6 +34,10 @@
         /// </summary>
         public TimeSpan TokenMaxQueueTime { get; set; } = TimeSpan.MaxValue;
 
+        /// <summary>
+        /// Provides a textual representation of this <see cref="SimulationSettings"/>.
+        /// </summary>
+        /// <returns></returns>
         public override string ToString()
         {
             return $"Simulation settings: \n\r" +
