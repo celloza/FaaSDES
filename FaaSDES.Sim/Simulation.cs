@@ -1,4 +1,5 @@
 ﻿using FaaSDES.Sim.Nodes;
+using FaaSDES.Sim.NodeStatistics;
 using FaaSDES.Sim.Tokens;
 using FaaSDES.Sim.Tokens.Generation;
 using System;
@@ -162,9 +163,11 @@ namespace FaaSDES.Sim
                                 token.Status = SimTokenStatus.Abandoned;
                                 token.Stats.EndReason = TokenEndReason.Abandoned;
                                 token.Stats.EndDate = State.CurrentDateTime;
+                                //FlushLogsToStorage(token);
                                 changesThisIteration++;
                             }
 
+                            (CompletedTokens as List<ISimToken>).AddRange(abandoningTokens);
 
                             // Only ActivitySimNodes need to execute tokens
                             // Iterate through the tokens being executed, and determine if they are done
@@ -296,6 +299,8 @@ namespace FaaSDES.Sim
                 }
             }
 
+            FlushLogsToStorage();
+
             Trace.WriteLine("Simulation complete.");
         }
 
@@ -337,6 +342,40 @@ namespace FaaSDES.Sim
 
             CompletedTokens = new List<ISimToken>();
         }
+
+        private void FlushLogsToStorage()
+        {
+            foreach(var node in Nodes)
+                FlushLogsToStorage(node);
+        }
+
+        private void FlushLogsToStorage(ISimNode node)
+        {
+            foreach (var nodeQueueItem in (node as SimNodeBase).WaitingQueue)
+                FlushLogsToStorage(nodeQueueItem.TokenInQueue);
+
+            foreach (var nodeQueueItem in (node as SimNodeBase).ExecutionQueue)
+                FlushLogsToStorage(nodeQueueItem.TokenInQueue);
+        }
+
+        private void FlushLogsToStorage(ISimToken token)
+        {
+
+        }
+
+        public IEnumerable<EventStatistic> GetAllEventStatistics(IEnumerable<EventStatistic> stats)
+        {
+            // Nodes.Select(x => (x as SimNodeBase).ExecutionQueue.Select(y => y.TokenInQueue))
+            // Nodes.Select(x => (x as SimNodeBase).WaitingQueue.Select(y => y.TokenInQueue))
+
+            //var tokensInExecution = Nodes.Select(x => (x as SimNodeBase).ExecutionQueue.Select(y => y.TokenInQueue)).SelectMany(z => z);
+            //var tokensInWaiting = Nodes.Select(x => (x as SimNodeBase).WaitingQueue.Select(y => y.TokenInQueue)).SelectMany(z => z);
+
+            var returnVal = Nodes.Select(x => (x as SimNodeBase).Stats.EventStatistics).SelectMany(y => y);
+
+            return returnVal;                    
+        }
+
 
         private readonly ISimTokenGenerator _tokenGenerator;
         private readonly SimulationSettings _settings;

@@ -1709,6 +1709,7 @@ namespace FaaSDES.UI.ViewModel
                     }
 
                     var url = "http://localhost:7071/api/SimulationOrchestrator_HttpStart";
+                    //var url = "https://simex.azurewebsites.net/api/SimulationOrchestrator_HttpStart";
                     var client = new RestSharp.RestClient(url);
                     var request = new RestSharp.RestRequest(RestSharp.Method.POST);
                     //request.AddHeader("x-functions-key", securityCode);

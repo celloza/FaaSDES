@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="FaaSDES.Sim.Tokens.SimToken">
+    <Position X="4.75" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ABACAAAEQAAAAAAAAEAAAAgAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Tokens\SimToken.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Enum Name="FaaSDES.Sim.Tokens.SimTokenStatus">
+    <Position X="7" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAQAAEAAAQIAAAAAAAAAAAAAAAAgAAAAAAAAAAA=</HashCode>
+      <FileName>Tokens\SimTokenStatus.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>
