@@ -57,6 +57,7 @@ namespace FaaSDES.UI.ViewModel
         private FaaSDESNodeViewModel _selectedFaaSDESActivityNodeViewModel = null;
         private FaaSDES.Sim.Simulator _currentSimulator;
         private FaaSDES.Sim.Simulation _currentSimulation;
+        private bool _isSimulationLoaded = false;
 
         #endregion
         public DiagramVM()
@@ -467,13 +468,30 @@ namespace FaaSDES.UI.ViewModel
                 }
             }
         }
+
+        public bool IsSimulationLoaded
+        {
+            get
+            {
+                return _isSimulationLoaded;
+            }
+            set
+            {
+                if (value != _isSimulationLoaded)
+                {
+                    _isSimulationLoaded = value;
+                    OnPropertyChanged("IsSimulationLoaded");
+                }
+            }
+        }
+
         #endregion
 
-        #region Helper Methods
-        /// <summary>
-        /// This method is used to execute Save command
-        /// </summary>
-        /// <param name="obj"></param>
+            #region Helper Methods
+            /// <summary>
+            /// This method is used to execute Save command
+            /// </summary>
+            /// <param name="obj"></param>
         private void OnMenuOpenCommand(object obj)
         {
             BpmnNode bpmnnode = (obj as MenuOpeningEventArgs).Source as BpmnNode;
@@ -1669,7 +1687,7 @@ namespace FaaSDES.UI.ViewModel
         /// <param name="obj"></param>
         private void OnLoad(object obj)
         {
-            
+
             OpenFileDialog openDialogBox = new OpenFileDialog();
             openDialogBox.Title = "Load";
             openDialogBox.RestoreDirectory = true;
@@ -1690,8 +1708,8 @@ namespace FaaSDES.UI.ViewModel
 
                         var tokenGenerator = new TimerSimTokenGenerator(
                             new GenerationSettings(0, 5),
-                            new TimeOnly(8,0),
-                            new TimeOnly(15,0),
+                            new TimeOnly(8, 0),
+                            new TimeOnly(15, 0),
                             new WeekDaySchedule(true, true, true, true, true, false, false));
 
                         var simSettings = new Sim.SimulationSettings()
@@ -1703,13 +1721,14 @@ namespace FaaSDES.UI.ViewModel
                             TokenMaxQueueTime = new TimeSpan(1, 30, 0)
                         };
 
-                        
+
                         _currentSimulation = _currentSimulator.NewSimulationInstance(simSettings, tokenGenerator);
 
                         (this.Connectors as ObservableCollection<ConnectorViewModel>).Clear();
                         (this.Nodes as ObservableCollection<NodeViewModel>).Clear();
 
                         InitializeDiagramFromSimulation();
+                        IsSimulationLoaded = true;
                     }
                 }
                 else
@@ -1803,15 +1822,15 @@ namespace FaaSDES.UI.ViewModel
             eventstart.ID = "start";
 
 
-            foreach(var node in _currentSimulation.Nodes)
+            foreach (var node in _currentSimulation.Nodes)
             {
-                if(node is ActivitySimNode)
+                if (node is ActivitySimNode)
                 {
                     var activityNodeVM = (ActivitySimNode)node;
 
                     TaskType activityTasktype = TaskType.None;
 
-                    switch(activityNodeVM.Type)
+                    switch (activityNodeVM.Type)
                     {
                         case ActivitySimNodeType.Script:
                             activityTasktype = TaskType.Script;
@@ -1848,13 +1867,13 @@ namespace FaaSDES.UI.ViewModel
 
                 }
 
-                if(node is EventSimNode)
+                if (node is EventSimNode)
                 {
                     var eventNode = (EventSimNode)node;
 
                     EventType eventType = EventType.Intermediate;
 
-                    switch(eventNode.Type)
+                    switch (eventNode.Type)
                     {
                         case EventSimNodeType.IntermediateCatch:
                             eventType = EventType.Intermediate;
@@ -1869,7 +1888,7 @@ namespace FaaSDES.UI.ViewModel
 
                     Syncfusion.UI.Xaml.Diagram.Controls.EventTrigger eventTrigger = Syncfusion.UI.Xaml.Diagram.Controls.EventTrigger.None;
 
-                    switch(eventNode.Trigger)
+                    switch (eventNode.Trigger)
                     {
                         case EventSimNodeTrigger.None:
                             eventTrigger = Syncfusion.UI.Xaml.Diagram.Controls.EventTrigger.None;
@@ -1911,18 +1930,18 @@ namespace FaaSDES.UI.ViewModel
                             eventTrigger = Syncfusion.UI.Xaml.Diagram.Controls.EventTrigger.Parallel;
                             break;
                     }
-                    
-                    FaaSDESEventNodeViewModel eventNodeVM = CreateEventNode(200,200, eventType, eventTrigger, eventNode.Name);
+
+                    FaaSDESEventNodeViewModel eventNodeVM = CreateEventNode(200, 200, eventType, eventTrigger, eventNode.Name);
                     eventNodeVM.ID = eventNode.Id;
                 }
 
-                if(node is GatewaySimNode)
+                if (node is GatewaySimNode)
                 {
                     var gatewayNode = (GatewaySimNode)node;
 
                     GatewayType gatewayType = GatewayType.None;
 
-                    switch(gatewayNode.Type)
+                    switch (gatewayNode.Type)
                     {
                         case GatewaySimNodeType.Parallel:
                             gatewayType = GatewayType.Parallel;
@@ -1943,7 +1962,7 @@ namespace FaaSDES.UI.ViewModel
 
             //now that all nodes exist, create links from all outbound connections
 
-            foreach(var link in _currentSimulation.StartNode.OutboundFlows)
+            foreach (var link in _currentSimulation.StartNode.OutboundFlows)
             {
                 var snode = (this.Nodes as ObservableCollection<NodeViewModel>).Where(x => x.ID == "start").FirstOrDefault() as BpmnNodeViewModel;
                 var tnode = (this.Nodes as ObservableCollection<NodeViewModel>).Where(x => x.ID == (link.TargetNode as SimNodeBase).Id).FirstOrDefault() as BpmnNodeViewModel;
@@ -1953,7 +1972,7 @@ namespace FaaSDES.UI.ViewModel
 
             foreach (var node in _currentSimulation.Nodes)
             {
-                foreach(var link in (node as SimNodeBase).OutboundFlows)
+                foreach (var link in (node as SimNodeBase).OutboundFlows)
                 {
                     var snode = (this.Nodes as ObservableCollection<NodeViewModel>).Where(x => x.ID == (link.SourceNode as SimNodeBase).Id).FirstOrDefault() as BpmnNodeViewModel;
                     var tnode = (this.Nodes as ObservableCollection<NodeViewModel>).Where(x => x.ID == (link.TargetNode as SimNodeBase).Id).FirstOrDefault() as BpmnNodeViewModel;
