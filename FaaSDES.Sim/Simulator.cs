@@ -1,10 +1,5 @@
 ﻿using FaaSDES.Sim.Nodes;
 using FaaSDES.Sim.Tokens.Generation;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml.Linq;
 
 namespace FaaSDES.Sim
@@ -15,15 +10,13 @@ namespace FaaSDES.Sim
     /// </summary>
     public class Simulator
     {
+        #region Public Methods
 
         /// <summary>
         /// Creates a new <see cref="Simulator"/> instance with the provided 
         /// <see cref="ISimTokenGenerator"/> and <see cref="SimulationSettings"/>.
         /// </summary>
-        /// <param name="tokenGenerator">An instance of <see cref="ISimTokenGenerator"/>, 
-        /// responsible for the generation of tokens for the simulation.</param>
-        /// <param name="settings">An instance of <see cref="SimulationSettings"/> that
-        /// contains settings controlling the <see cref="Simulator"/>.</param>
+        /// <param name="streamToFile">A <see cref="Stream"/> object for the source BPMN model.
         public static Simulator FromBpmnXML(FileStream streamToFile)
         {
             ArgumentNullException.ThrowIfNull(nameof(streamToFile));
@@ -45,6 +38,11 @@ namespace FaaSDES.Sim
             return simulator;
         }
 
+        /// <summary>
+        /// Creates a new <see cref="Simulator"/> instance with the provided 
+        /// <see cref="ISimTokenGenerator"/> and <see cref="SimulationSettings"/>.
+        /// </summary>
+        /// <param name="xmlContent">A string containing the source BPMN model as BPMN XML.
         public static Simulator FromBpmnXML(string xmlContent)
         {
             ArgumentNullException.ThrowIfNull(nameof(xmlContent));
@@ -81,6 +79,16 @@ namespace FaaSDES.Sim
             return sim;
         }
 
+        #endregion
+
+        #region Constructors
+
+        private Simulator() { }
+
+        #endregion
+
+        #region Private Methods
+
         /// <summary>
         /// Parses the provided BPMN XML contents into POCOs.
         /// </summary>
@@ -105,10 +113,13 @@ namespace FaaSDES.Sim
             var activities = source.Elements().Where(x => x.Name.LocalName.EndsWith("task", StringComparison.OrdinalIgnoreCase));
             foreach (var activity in activities)
             {
-                ActivitySimNode node = new(sim, activity.Attribute("id").Value,
-                   activity.Name.LocalName);
+                string nodeName = string.Empty;
 
-                
+                if (activity.Attribute("name") != null)
+                    nodeName = activity.Attribute("name").Value;
+
+                ActivitySimNode node = new(sim, activity.Attribute("id").Value,
+                   nodeName);                
 
                 switch (activity.Name.LocalName)
                 {
@@ -181,8 +192,13 @@ namespace FaaSDES.Sim
             var eventNodes = source.Elements().Where(x => x.Name.LocalName.EndsWith("Event", StringComparison.OrdinalIgnoreCase));
             foreach (var eventNode in eventNodes)
             {
+                string nodeName = string.Empty;
+
+                if (eventNode.Attribute("name") != null)
+                    nodeName = eventNode.Attribute("name").Value;
+
                 EventSimNode node = new(sim, eventNode.Attribute("id").Value,
-                   eventNode.Name.LocalName);
+                   nodeName);
 
                 switch (eventNode.Name.LocalName)
                 {
@@ -272,8 +288,6 @@ namespace FaaSDES.Sim
             }
         }
 
-        private Simulator() { }
-
         private IEnumerable<BpmnProperty> PropertyInitializer(XElement source)
         {
             var itemDefinitions = source.Parent.Elements(BpmnNamespace + "itemDefinition");
@@ -300,9 +314,15 @@ namespace FaaSDES.Sim
             return propertyList;
         }
 
+        #endregion
+
+        #region Fields
+
         private XElement SourceBpmn;
         private XNamespace BpmnNamespace;
         internal IEnumerable<BpmnProperty> Properties;
+
+        #endregion
     }
 
     internal class BpmnProperty

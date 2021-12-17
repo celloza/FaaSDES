@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using FaaSDES.Sim;
+using FaaSDES.Sim.NodeStatistics;
 using FaaSDES.Sim.Tokens.Generation;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
@@ -24,11 +25,11 @@ namespace FaaSDES.Functions
 
             var parallelTasks = new List<Task<string>>();
 
-            for (int i = 0; i < 10; i++)
-            {
+            //for (int i = 0; i < 10; i++)
+            //{
                 Task<string> task = context.CallActivityAsync<string>("SimulationOrchestrator_ExecuteSim", data); 
                 parallelTasks.Add(task);
-            }
+            //}
 
             await Task.WhenAll(parallelTasks);
 
@@ -36,14 +37,11 @@ namespace FaaSDES.Functions
             //string result = string.Join("\n\r", parallelTasks);
             //await context.CallActivityAsync("F3", sum);
 
-            
-            
-
             return parallelTasks.Select(x => x.Result).ToList();
         }
 
         [FunctionName("SimulationOrchestrator_ExecuteSim")]
-        public static string SayHello([ActivityTrigger] SimulationRequest xmlContent, ILogger log)
+        public static string ExecuteSim([ActivityTrigger] SimulationRequest xmlContent, ILogger log) //, IAsyncCollector<EventStatistic> outputTable
         {
             log.LogInformation("C# HTTP trigger function processed a request.");
 
@@ -86,6 +84,11 @@ namespace FaaSDES.Functions
             sw.Stop();
 
             log.LogInformation($"Execution completed in {TimeSpan.FromMilliseconds(sw.ElapsedMilliseconds):G}");
+
+            log.LogInformation("Dumping results...");
+
+            //outputTable.AddAsync()
+            //outputTable.FlushAsync();
 
             return "Simulation complete.";
         }

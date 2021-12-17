@@ -1,4 +1,5 @@
-﻿using Syncfusion.UI.Xaml.Diagram;
+﻿using FaaSDES.Sim.Nodes;
+using Syncfusion.UI.Xaml.Diagram;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -33,5 +34,7 @@ namespace FaaSDES.UI.Nodes
                 }
             }
         }
+
+        public ISimNode FaaSDESNode { get; set; }
     }
 }

@@ -20,6 +20,7 @@ using FaaSDES.UI.Nodes;
 using System.Diagnostics;
 using FaaSDES.Sim.Tokens.Generation;
 using FaaSDES.Sim;
+using FaaSDES.Sim.Nodes;
 
 namespace FaaSDES.UI.ViewModel
 {
@@ -33,6 +34,8 @@ namespace FaaSDES.UI.ViewModel
         private ICommand _MenuOpenCommand;
         private ICommand _MenuItemClickedCommand;
         private ICommand _SelectionChangedCommand;
+        private ICommand _RunLocally;
+        private ICommand _RunFaaS;
 
         #endregion
         #region private variables
@@ -52,6 +55,8 @@ namespace FaaSDES.UI.ViewModel
         private bool _ZoomOutEnabled = true;
         private double _currentZoom = 1;
         private FaaSDESNodeViewModel _selectedFaaSDESActivityNodeViewModel = null;
+        private FaaSDES.Sim.Simulator _currentSimulator;
+        private FaaSDES.Sim.Simulation _currentSimulation;
 
         #endregion
         public DiagramVM()
@@ -121,6 +126,8 @@ namespace FaaSDES.UI.ViewModel
             ButtonMenuOpeningCommand = new Command(OnButtonMenuOpeningCommand);
             ItemAddedCommand = new Command(OnItemAddedCommandCommand);
             SelectionChangedCommand = new Command(OnSelectionChangedCommand);
+            RunLocallyCommand = new Command(OnRunLocallyCommand);
+            RunFaaSCommand = new Command(OnRunFaaSCommand);
         }
 
         #region Commands
@@ -184,6 +191,18 @@ namespace FaaSDES.UI.ViewModel
         {
             get { return _SelectionChangedCommand; }
             set { _SelectionChangedCommand = value; }
+        }
+
+        public ICommand RunLocallyCommand
+        {
+            get { return _RunLocally; }
+            set { _RunLocally = value; }
+        }
+
+        public ICommand RunFaaSCommand
+        {
+            get { return _RunFaaS; }
+            set { _RunFaaS = value; }
         }
 
         #endregion
@@ -449,6 +468,7 @@ namespace FaaSDES.UI.ViewModel
             }
         }
         #endregion
+
         #region Helper Methods
         /// <summary>
         /// This method is used to execute Save command
@@ -1649,6 +1669,7 @@ namespace FaaSDES.UI.ViewModel
         /// <param name="obj"></param>
         private void OnLoad(object obj)
         {
+            
             OpenFileDialog openDialogBox = new OpenFileDialog();
             openDialogBox.Title = "Load";
             openDialogBox.RestoreDirectory = true;
@@ -1665,25 +1686,7 @@ namespace FaaSDES.UI.ViewModel
                     // Load the bpmn document
                     using (FileStream fileStream = File.OpenRead(this._SavedPath))
                     {
-                        //var simulator = new Simulator(fileStream);
-
-                        //var simulatorInstance = simulator.NewProcessInstance();
-                        //simulatorInstance.SetDefaultHandlers();
-                        //simulatorInstance.SetHandler("task", new ActivityHandler());
-                        //simulatorInstance.SetHandler("startEvent", new StartHandler());
-                        //simulatorInstance.SetHandler("inclusiveGateway", new GatewayHandler());
-                        //simulatorInstance.SetHandler("exclusiveGateway", new GatewayHandler());
-                        //simulatorInstance.SetHandler("parallelGateway", new GatewayHandler());
-                        //simulatorInstance.SetHandler("endEvent", new StartHandler());
-                        //simulatorInstance.SetHandler("sequenceFlow", new FlowHandler());
-
-                        ////add process variables here
-                        ////var processVar = new Dictionary<string, object>() { { "processVar1", "value" }, { "processVar2", 50 } };
-                        //var processVar = new Dictionary<string, object>();
-                        //simulatorInstance.Start(processVar);
-                        //Console.ReadLine();
-
-                        var simulator = FaaSDES.Sim.Simulator.FromBpmnXML(fileStream);
+                        _currentSimulator = FaaSDES.Sim.Simulator.FromBpmnXML(fileStream);
 
                         var tokenGenerator = new TimerSimTokenGenerator(
                             new GenerationSettings(0, 5),
@@ -1701,25 +1704,13 @@ namespace FaaSDES.UI.ViewModel
                         };
 
                         
-                        var simulation = simulator.NewSimulationInstance(simSettings, tokenGenerator);
+                        _currentSimulation = _currentSimulator.NewSimulationInstance(simSettings, tokenGenerator);
 
-                        //simulation.Execute();
+                        (this.Connectors as ObservableCollection<ConnectorViewModel>).Clear();
+                        (this.Nodes as ObservableCollection<NodeViewModel>).Clear();
 
-
+                        InitializeDiagramFromSimulation();
                     }
-
-                    var url = "http://localhost:7071/api/SimulationOrchestrator_HttpStart";
-                    var client = new RestSharp.RestClient(url);
-                    var request = new RestSharp.RestRequest(RestSharp.Method.POST);
-                    //request.AddHeader("x-functions-key", securityCode);
-                    //request.AddQueryParameter("ResourceGroupName", "ImageStormSource");
-
-                    SimulationRequest simRequest = new(File.ReadAllText(this._SavedPath)) ;
-
-                    request.AddJsonBody(simRequest); 
-
-
-                    var response = client.Execute(request);
                 }
                 else
                 {
@@ -1803,6 +1794,173 @@ namespace FaaSDES.UI.ViewModel
             CreateBpmnFlow(task5, event4, null, port9, port10);
             CreateBpmnFlow(task8, event5, null, port11, port12);
             CreateBpmnFlow(event5, task2, null, port13, port14);
+        }
+
+        private void InitializeDiagramFromSimulation()
+        {
+            // create the start node
+            FaaSDESEventNodeViewModel eventstart = CreateEventNode(100, 300, EventType.Start, Syncfusion.UI.Xaml.Diagram.Controls.EventTrigger.None);
+            eventstart.ID = "start";
+
+
+            foreach(var node in _currentSimulation.Nodes)
+            {
+                if(node is ActivitySimNode)
+                {
+                    var activityNodeVM = (ActivitySimNode)node;
+
+                    TaskType activityTasktype = TaskType.None;
+
+                    switch(activityNodeVM.Type)
+                    {
+                        case ActivitySimNodeType.Script:
+                            activityTasktype = TaskType.Script;
+                            break;
+                        case ActivitySimNodeType.Receive:
+                            activityTasktype = TaskType.Receive;
+                            break;
+                        case ActivitySimNodeType.Send:
+                            activityTasktype = TaskType.Send;
+                            break;
+                        case ActivitySimNodeType.ReceiveInstantiated:
+                            activityTasktype = TaskType.InstantiatingReceive;
+                            break;
+                        case ActivitySimNodeType.Manual:
+                            activityTasktype = TaskType.Manual;
+                            break;
+                        case ActivitySimNodeType.Service:
+                            activityTasktype = TaskType.Service;
+                            break;
+                        case ActivitySimNodeType.BusinessRule:
+                            activityTasktype = TaskType.BusinessRule;
+                            break;
+                        case ActivitySimNodeType.User:
+                            activityTasktype = TaskType.User;
+                            break;
+                        case ActivitySimNodeType.Undefined:
+                            activityTasktype = TaskType.None;
+                            break;
+
+                    }
+
+                    var activity = CreateTaskNode(100, 100, activityTasktype, activityNodeVM.Name);
+                    activity.ID = activityNodeVM.Id;
+
+                }
+
+                if(node is EventSimNode)
+                {
+                    var eventNode = (EventSimNode)node;
+
+                    EventType eventType = EventType.Intermediate;
+
+                    switch(eventNode.Type)
+                    {
+                        case EventSimNodeType.IntermediateCatch:
+                            eventType = EventType.Intermediate;
+                            break;
+                        case EventSimNodeType.IntermediateThrow:
+                            eventType = EventType.ThrowingIntermediate;
+                            break;
+                        case EventSimNodeType.End:
+                            eventType = EventType.End;
+                            break;
+                    }
+
+                    Syncfusion.UI.Xaml.Diagram.Controls.EventTrigger eventTrigger = Syncfusion.UI.Xaml.Diagram.Controls.EventTrigger.None;
+
+                    switch(eventNode.Trigger)
+                    {
+                        case EventSimNodeTrigger.None:
+                            eventTrigger = Syncfusion.UI.Xaml.Diagram.Controls.EventTrigger.None;
+                            break;
+                        case EventSimNodeTrigger.Message:
+                            eventTrigger = Syncfusion.UI.Xaml.Diagram.Controls.EventTrigger.Message;
+                            break;
+                        case EventSimNodeTrigger.Timer:
+                            eventTrigger = Syncfusion.UI.Xaml.Diagram.Controls.EventTrigger.Timer;
+                            break;
+                        case EventSimNodeTrigger.Conditional:
+                            eventTrigger = Syncfusion.UI.Xaml.Diagram.Controls.EventTrigger.Conditional;
+                            break;
+                        case EventSimNodeTrigger.Link:
+                            eventTrigger = Syncfusion.UI.Xaml.Diagram.Controls.EventTrigger.Link;
+                            break;
+                        case EventSimNodeTrigger.Signal:
+                            eventTrigger = Syncfusion.UI.Xaml.Diagram.Controls.EventTrigger.Signal;
+                            break;
+                        case EventSimNodeTrigger.Error:
+                            eventTrigger = Syncfusion.UI.Xaml.Diagram.Controls.EventTrigger.Error;
+                            break;
+                        case EventSimNodeTrigger.Escalation:
+                            eventTrigger = Syncfusion.UI.Xaml.Diagram.Controls.EventTrigger.Escalation;
+                            break;
+                        case EventSimNodeTrigger.Termination:
+                            eventTrigger = Syncfusion.UI.Xaml.Diagram.Controls.EventTrigger.Termination;
+                            break;
+                        case EventSimNodeTrigger.Compensation:
+                            eventTrigger = Syncfusion.UI.Xaml.Diagram.Controls.EventTrigger.Compensation;
+                            break;
+                        case EventSimNodeTrigger.Cancel:
+                            eventTrigger = Syncfusion.UI.Xaml.Diagram.Controls.EventTrigger.Cancel;
+                            break;
+                        case EventSimNodeTrigger.Multiple:
+                            eventTrigger = Syncfusion.UI.Xaml.Diagram.Controls.EventTrigger.Multiple;
+                            break;
+                        case EventSimNodeTrigger.MutlipleParallel:
+                            eventTrigger = Syncfusion.UI.Xaml.Diagram.Controls.EventTrigger.Parallel;
+                            break;
+                    }
+                    
+                    FaaSDESEventNodeViewModel eventNodeVM = CreateEventNode(200,200, eventType, eventTrigger, eventNode.Name);
+                    eventNodeVM.ID = eventNode.Id;
+                }
+
+                if(node is GatewaySimNode)
+                {
+                    var gatewayNode = (GatewaySimNode)node;
+
+                    GatewayType gatewayType = GatewayType.None;
+
+                    switch(gatewayNode.Type)
+                    {
+                        case GatewaySimNodeType.Parallel:
+                            gatewayType = GatewayType.Parallel;
+                            break;
+                        case GatewaySimNodeType.Inclusive:
+                            gatewayType = GatewayType.Inclusive;
+                            break;
+                        case GatewaySimNodeType.Exclusive:
+                            gatewayType = GatewayType.Exclusive;
+                            break;
+                    }
+
+                    FaaSDESGatewayViewModel gatewayNodeVM = CreateGatewayNode(400, 400, gatewayType);
+                    gatewayNodeVM.ID = gatewayNode.Id;
+
+                }
+            }
+
+            //now that all nodes exist, create links from all outbound connections
+
+            foreach(var link in _currentSimulation.StartNode.OutboundFlows)
+            {
+                var snode = (this.Nodes as ObservableCollection<NodeViewModel>).Where(x => x.ID == "start").FirstOrDefault() as BpmnNodeViewModel;
+                var tnode = (this.Nodes as ObservableCollection<NodeViewModel>).Where(x => x.ID == (link.TargetNode as SimNodeBase).Id).FirstOrDefault() as BpmnNodeViewModel;
+
+                var flow = CreateBpmnFlow(snode, tnode);
+            }
+
+            foreach (var node in _currentSimulation.Nodes)
+            {
+                foreach(var link in (node as SimNodeBase).OutboundFlows)
+                {
+                    var snode = (this.Nodes as ObservableCollection<NodeViewModel>).Where(x => x.ID == (link.SourceNode as SimNodeBase).Id).FirstOrDefault() as BpmnNodeViewModel;
+                    var tnode = (this.Nodes as ObservableCollection<NodeViewModel>).Where(x => x.ID == (link.TargetNode as SimNodeBase).Id).FirstOrDefault() as BpmnNodeViewModel;
+
+                    var flow = CreateBpmnFlow(snode, tnode);
+                }
+            }
         }
 
         private NodePortViewModel CreatePort(double offx, double offy, BpmnNodeViewModel node)
@@ -2365,6 +2523,27 @@ namespace FaaSDES.UI.ViewModel
                         SelectedFaaSDESActivityNodeViewModel = (FaaSDESNodeViewModel)args.Item;
                 }
             }
+        }
+
+        public void OnRunLocallyCommand(object parameter)
+        {
+            _currentSimulation.Execute();
+        }
+
+        public void OnRunFaaSCommand(object parameter)
+        {
+            var url = "http://localhost:7071/api/SimulationOrchestrator_HttpStart";
+            //var url = "https://simex.azurewebsites.net/api/SimulationOrchestrator_HttpStart";
+            var client = new RestSharp.RestClient(url);
+            var request = new RestSharp.RestRequest(RestSharp.Method.POST);
+            //request.AddHeader("x-functions-key", securityCode);
+            //request.AddQueryParameter("ResourceGroupName", "ImageStormSource");
+
+            SimulationRequest simRequest = new(File.ReadAllText(this._SavedPath));
+
+            request.AddJsonBody(simRequest);
+
+            var response = client.Execute(request);
         }
     }
 

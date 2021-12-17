@@ -12,14 +12,14 @@ namespace FaaSDES.Sim
 
         public string GetBpmnXmlData()
         {
-            var base64EncodedBytes = System.Convert.FromBase64String(Base64XmlData);
-            return System.Text.Encoding.UTF8.GetString(base64EncodedBytes);
+            var base64EncodedBytes = Convert.FromBase64String(Base64XmlData);
+            return Encoding.UTF8.GetString(base64EncodedBytes);
         }
 
         public SimulationRequest(string xmlData)
         {
-            var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(xmlData);
-            Base64XmlData = System.Convert.ToBase64String(plainTextBytes);
+            var plainTextBytes = Encoding.UTF8.GetBytes(xmlData);
+            Base64XmlData = Convert.ToBase64String(plainTextBytes);
         }
 
         public SimulationRequest()
