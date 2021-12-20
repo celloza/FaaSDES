@@ -21,6 +21,7 @@ using System.Diagnostics;
 using FaaSDES.Sim.Tokens.Generation;
 using FaaSDES.Sim;
 using FaaSDES.Sim.Nodes;
+using Syncfusion.UI.Xaml.Diagram.Layout;
 
 namespace FaaSDES.UI.ViewModel
 {
@@ -54,6 +55,7 @@ namespace FaaSDES.UI.ViewModel
         private bool _ZoomInEnabled = true;
         private bool _ZoomOutEnabled = true;
         private double _currentZoom = 1;
+        private int _noOfRuns = 1;
         private FaaSDESNodeViewModel _selectedFaaSDESActivityNodeViewModel = null;
         private FaaSDES.Sim.Simulator _currentSimulator;
         private FaaSDES.Sim.Simulation _currentSimulation;
@@ -485,13 +487,29 @@ namespace FaaSDES.UI.ViewModel
             }
         }
 
+        public int NoOfRuns
+        {
+            get
+            {
+                return _noOfRuns;
+            }
+            set
+            {
+                if (value != _noOfRuns)
+                {
+                    _noOfRuns = value;
+                    OnPropertyChanged("NoOfRuns");
+                }
+            }
+        }
+
         #endregion
 
-            #region Helper Methods
-            /// <summary>
-            /// This method is used to execute Save command
-            /// </summary>
-            /// <param name="obj"></param>
+        #region Helper Methods
+        /// <summary>
+        /// This method is used to execute Save command
+        /// </summary>
+        /// <param name="obj"></param>
         private void OnMenuOpenCommand(object obj)
         {
             BpmnNode bpmnnode = (obj as MenuOpeningEventArgs).Source as BpmnNode;
@@ -1817,6 +1835,10 @@ namespace FaaSDES.UI.ViewModel
 
         private void InitializeDiagramFromSimulation()
         {
+            this.LayoutManager = new LayoutManager();
+            this.LayoutManager.Layout = new FlowchartLayout() { Orientation = FlowchartOrientation.LeftToRight };
+            this.LayoutManager.RefreshFrequency = RefreshFrequency.Add;
+
             // create the start node
             FaaSDESEventNodeViewModel eventstart = CreateEventNode(100, 300, EventType.Start, Syncfusion.UI.Xaml.Diagram.Controls.EventTrigger.None);
             eventstart.ID = "start";
@@ -1970,7 +1992,7 @@ namespace FaaSDES.UI.ViewModel
                 var flow = CreateBpmnFlow(snode, tnode);
             }
 
-            foreach (var node in _currentSimulation.Nodes)
+            foreach (var node in _currentSimulation.Nodes.Where(x => (x as SimNodeBase).Id != "start"))
             {
                 foreach (var link in (node as SimNodeBase).OutboundFlows)
                 {
@@ -1980,14 +2002,16 @@ namespace FaaSDES.UI.ViewModel
                     var flow = CreateBpmnFlow(snode, tnode);
                 }
             }
+                       
+
         }
 
         private NodePortViewModel CreatePort(double offx, double offy, BpmnNodeViewModel node)
         {
             NodePortViewModel port = new()
             {
-                NodeOffsetX = offx,
-                NodeOffsetY = offy,
+                //NodeOffsetX = offx,
+                //NodeOffsetY = offy,
                 Node = node,
             };
             if (node.Ports == null)
@@ -2559,6 +2583,7 @@ namespace FaaSDES.UI.ViewModel
             //request.AddQueryParameter("ResourceGroupName", "ImageStormSource");
 
             SimulationRequest simRequest = new(File.ReadAllText(this._SavedPath));
+            simRequest.Iterations = NoOfRuns;
 
             request.AddJsonBody(simRequest);
 

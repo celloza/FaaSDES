@@ -443,6 +443,8 @@
                               Stretch="Fill" 
                               Width="14"/>
                 </Button>
+                
+                
 
                 <!-- Run sim as functions -->
                 <Button Margin="4,0,4,0" Width="30" Height="30" Cursor="Hand" ToolTip="Run simulation in Azure Functions" Command="{Binding RunFaaSCommand}"  Style="{StaticResource WPFGlyphButtonStyle}" IsEnabled="{Binding IsSimulationLoaded}">
@@ -452,6 +454,8 @@
                               Stretch="Fill" 
                               Width="14"/>
                 </Button>
+                <syncfusion:LabelTextBlock Margin="3,-2,3,0" Text="# of runs" VerticalAlignment="Center"/>
+                <syncfusion:IntegerTextBox Margin="0,3,0,3" VerticalAlignment="Stretch" Width="50" Value="{Binding NoOfRuns}"/>
 
             </syncfusion:ToolBarAdv>
         </StackPanel>

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -19,17 +20,21 @@ namespace FaaSDES.Functions
     {
         [FunctionName("SimulationOrchestrator")]
         public static async Task<List<string>> RunOrchestrator(
-            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            [OrchestrationTrigger] IDurableOrchestrationContext context, ILogger log)
         {
             var data = context.GetInput<SimulationRequest>();
 
+            log.LogInformation($"Received BPMN XML configuration:");
+            //log.LogInformation(data.GetBpmnXmlData());
+
             var parallelTasks = new List<Task<string>>();
 
-            //for (int i = 0; i < 10; i++)
-            //{
-                Task<string> task = context.CallActivityAsync<string>("SimulationOrchestrator_ExecuteSim", data); 
+            for (int i = 0; i < data.Iterations; i++)
+            {
+                log.LogInformation(@"Creating task #" + i);
+                Task<string> task = context.CallActivityAsync<string>("SimulationOrchestrator_ExecuteSim", data);
                 parallelTasks.Add(task);
-            //}
+            }
 
             await Task.WhenAll(parallelTasks);
 
@@ -43,12 +48,7 @@ namespace FaaSDES.Functions
         [FunctionName("SimulationOrchestrator_ExecuteSim")]
         public static string ExecuteSim([ActivityTrigger] SimulationRequest xmlContent, ILogger log) //, IAsyncCollector<EventStatistic> outputTable
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
-
-            //string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-
-            log.LogInformation($"Received BPMN XML configuration:");
-            log.LogInformation(xmlContent.GetBpmnXmlData());
+            log.LogInformation("Execute sim activity started.");
 
             Simulator simulator = Simulator.FromBpmnXML(xmlContent.GetBpmnXmlData());
 
@@ -58,7 +58,7 @@ namespace FaaSDES.Functions
                             new TimeOnly(15, 0),
                             new WeekDaySchedule(true, true, true, true, true, false, false));
 
-            log.LogInformation(tokenGenerator.ToString());
+            //log.LogInformation(tokenGenerator.ToString());
 
             var simSettings = new SimulationSettings()
             {
@@ -69,11 +69,11 @@ namespace FaaSDES.Functions
                 TokenMaxQueueTime = new TimeSpan(1, 30, 0)
             };
 
-            log.LogInformation(simSettings.ToString());
+            //log.LogInformation(simSettings.ToString());
 
             var simulation = simulator.NewSimulationInstance(simSettings, tokenGenerator);
 
-            log.LogInformation(simulation.ToString());
+            //log.LogInformation(simulation.ToString());
             log.LogInformation("Starting simulation execution...");
 
             System.Diagnostics.Stopwatch sw = new();
@@ -87,8 +87,17 @@ namespace FaaSDES.Functions
 
             log.LogInformation("Dumping results...");
 
-            //outputTable.AddAsync()
-            //outputTable.FlushAsync();
+            return System.Text.Json.JsonSerializer.Serialize(simulation.GetAllEventStatistics().ToList());
+        }
+
+        [FunctionName("SimulationOrchestrator_FlushLogs")]
+        public static string FlushLogs([ActivityTrigger] SimulationRequest xmlContent, 
+            ILogger log) //,
+            //[Table("todos", Connection = "AzureWebJobsStorage")] IAsyncCollector<TodoTable> todoTableCollector) //, IAsyncCollector<EventStatistic> outputTable
+        {
+            log.LogInformation("Flush logs activity started.");
+
+            
 
             return "Simulation complete.";
         }
@@ -99,18 +108,11 @@ namespace FaaSDES.Functions
             [DurableClient] IDurableOrchestrationClient starter,
             ILogger log)
         {
-            //var data = req.Content;
-
-            
-            // Why is this null?
-            //SimulationRequest data = await req.Content.ReadAsAsync<SimulationRequest>();
-
-            // But this isn't?
-            var data2 = req.Content.ReadAsStringAsync();
-            SimulationRequest test = System.Text.Json.JsonSerializer.Deserialize<SimulationRequest>(data2.Result);
+            var data = req.Content.ReadAsStringAsync();
+            SimulationRequest request = System.Text.Json.JsonSerializer.Deserialize<SimulationRequest>(data.Result);
 
             //Function input comes from the request content.
-            string instanceId = await starter.StartNewAsync("SimulationOrchestrator", test);
+            string instanceId = await starter.StartNewAsync("SimulationOrchestrator", request);
 
             log.LogInformation($"Started orchestration with ID = '{instanceId}'.");
 

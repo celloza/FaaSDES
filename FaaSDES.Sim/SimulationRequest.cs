@@ -22,8 +22,12 @@ namespace FaaSDES.Sim
             Base64XmlData = Convert.ToBase64String(plainTextBytes);
         }
 
+        public int Iterations { get; set; }
+
         public SimulationRequest()
-        { }
+        {
+            Iterations = 1;
+        }
 
         
 

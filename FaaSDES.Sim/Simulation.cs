@@ -331,7 +331,7 @@ namespace FaaSDES.Sim
                 $"No of event nodes: {Nodes.Count(x => x is EventSimNode)} \n\r";
         }
 
-        public IEnumerable<EventStatistic> GetAllEventStatistics(IEnumerable<EventStatistic> stats)
+        public IEnumerable<EventStatistic> GetAllEventStatistics()
         {
             // Nodes.Select(x => (x as SimNodeBase).ExecutionQueue.Select(y => y.TokenInQueue))
             // Nodes.Select(x => (x as SimNodeBase).WaitingQueue.Select(y => y.TokenInQueue))
@@ -381,13 +381,13 @@ namespace FaaSDES.Sim
         private void FlushLogsToStorage(ISimNode node)
         {
             foreach (var nodeQueueItem in (node as SimNodeBase).WaitingQueue)
-                FlushLogsToStorage(nodeQueueItem.TokenInQueue);
+                FlushLogsToStorage(nodeQueueItem.TokenInQueue as SimNodeBase);
 
             foreach (var nodeQueueItem in (node as SimNodeBase).ExecutionQueue)
-                FlushLogsToStorage(nodeQueueItem.TokenInQueue);
+                FlushLogsToStorage(nodeQueueItem.TokenInQueue as SimNodeBase);
         }
 
-        private void FlushLogsToStorage(ISimToken token)
+        private void FlushLogsToStorage(SimNodeBase token)
         {
 
         }
