@@ -34,6 +34,11 @@ namespace FaaSDES.Sim
 
         public IEnumerable<ISimToken> CompletedTokens { get; set; }
 
+        /// <summary>
+        /// The unique identified for this simulation.
+        /// </summary>
+        public Guid SimulationId { get; set; }
+
         #endregion
 
         #region Public Methods
@@ -105,7 +110,8 @@ namespace FaaSDES.Sim
                                     StartNode.Stats.AddEventStat(
                                         State.CurrentDateTime,
                                         NodeStatistics.EventStatisticType.TokenJoinedWaitingQueue,
-                                        StartNode.Id);
+                                        StartNode.Id,
+                                        SimulationId);
                                 }
                             }
 
@@ -120,7 +126,8 @@ namespace FaaSDES.Sim
                                     StartNode.Stats.AddEventStat(
                                         State.CurrentDateTime,
                                         NodeStatistics.EventStatisticType.QueueOverflow,
-                                        StartNode.Id);
+                                        StartNode.Id,
+                                        SimulationId);
 
                                 }
                             }
@@ -155,7 +162,8 @@ namespace FaaSDES.Sim
                                 node.Stats.AddEventStat(
                                        State.CurrentDateTime,
                                        NodeStatistics.EventStatisticType.QueueAbandon,
-                                       node.Id);
+                                       node.Id,
+                                        SimulationId);
                             }
 
                             foreach (SimToken token in abandoningTokens)
@@ -214,12 +222,14 @@ namespace FaaSDES.Sim
                                             node.Stats.AddEventStat(
                                                    State.CurrentDateTime,
                                                    NodeStatistics.EventStatisticType.TokenLeftExecutionQueue,
-                                                   node.Id);
+                                                   node.Id,
+                                                   SimulationId);
 
                                             node.Stats.AddEventStat(
                                                    State.CurrentDateTime,
                                                    NodeStatistics.EventStatisticType.NodeExecuted,
-                                                   node.Id);
+                                                   node.Id,
+                                                   SimulationId);
                                         }
 
                                         var completedToken = node.ExecutionQueue.DequeueToken(queueItem);
@@ -232,7 +242,8 @@ namespace FaaSDES.Sim
                                             targetNode.Stats.AddEventStat(
                                                    State.CurrentDateTime,
                                                    NodeStatistics.EventStatisticType.TokenJoinedWaitingQueue,
-                                                   targetNode.Id);
+                                                   targetNode.Id,
+                                                   SimulationId);
                                         }
 
                                         changesThisIteration++;
@@ -267,12 +278,14 @@ namespace FaaSDES.Sim
                                         node.Stats.AddEventStat(
                                                State.CurrentDateTime,
                                                NodeStatistics.EventStatisticType.TokenLeftWaitingQueue,
-                                               node.Id);
+                                               node.Id,
+                                               SimulationId);
 
                                         node.Stats.AddEventStat(
                                                State.CurrentDateTime,
                                                NodeStatistics.EventStatisticType.TokenJoinedExecutionQueue,
-                                               node.Id);
+                                               node.Id,
+                                               SimulationId);
                                     }
                                     changesThisIteration++;
                                 }
@@ -331,6 +344,10 @@ namespace FaaSDES.Sim
                 $"No of event nodes: {Nodes.Count(x => x is EventSimNode)} \n\r";
         }
 
+        /// <summary>
+        /// Gets all the <see cref="EventStatistic"/> for all nodes in <see cref="Nodes"/>.
+        /// </summary>
+        /// <returns>A list of <see cref="EventStatistic"/>.</returns>
         public IEnumerable<EventStatistic> GetAllEventStatistics()
         {
             // Nodes.Select(x => (x as SimNodeBase).ExecutionQueue.Select(y => y.TokenInQueue))
@@ -340,7 +357,7 @@ namespace FaaSDES.Sim
             //var tokensInWaiting = Nodes.Select(x => (x as SimNodeBase).WaitingQueue.Select(y => y.TokenInQueue)).SelectMany(z => z);
 
             var returnVal = Nodes.Select(x => (x as SimNodeBase).Stats.EventStatistics).SelectMany(y => y);
-
+            
             return returnVal;
         }
 
@@ -366,18 +383,26 @@ namespace FaaSDES.Sim
             };
 
             CompletedTokens = new List<ISimToken>();
+            SimulationId = Guid.NewGuid();
         }
 
         #endregion
 
         #region Private Methods
 
+        /// <summary>
+        /// Flushes the logs.
+        /// </summary>
         private void FlushLogsToStorage()
         {
-            foreach(var node in Nodes)
+            foreach (var node in Nodes)
                 FlushLogsToStorage(node);
         }
 
+        /// <summary>
+        /// Flushes the logs of the specified <see cref="ISimNode"/>.
+        /// </summary>
+        /// <param name="node"></param>
         private void FlushLogsToStorage(ISimNode node)
         {
             foreach (var nodeQueueItem in (node as SimNodeBase).WaitingQueue)
@@ -387,9 +412,13 @@ namespace FaaSDES.Sim
                 FlushLogsToStorage(nodeQueueItem.TokenInQueue as SimNodeBase);
         }
 
+        /// <summary>
+        /// Flushes the logs of the specified <see cref="SimNodeBase"/>.
+        /// </summary>
+        /// <param name="token"></param>
         private void FlushLogsToStorage(SimNodeBase token)
         {
-
+            //System.IO.File.AppendAllText("c:\\temp\\data.txt", JsonSerializer.Serialize(token.Stats.EventStatistics.Select(x => x)));
         }
 
         #endregion

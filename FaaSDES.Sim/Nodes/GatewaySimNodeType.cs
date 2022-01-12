@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace FaaSDES.Sim.Nodes
+﻿namespace FaaSDES.Sim.Nodes
 {
+    /// <summary>
+    /// Enumeration that defines the <see cref="GatewaySimNode"/>'s type
+    /// based on those defined in the BPMN standard.
+    /// </summary>
     public enum GatewaySimNodeType
     {
         Parallel,

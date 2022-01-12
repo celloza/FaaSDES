@@ -2010,8 +2010,8 @@ namespace FaaSDES.UI.ViewModel
         {
             NodePortViewModel port = new()
             {
-                //NodeOffsetX = offx,
-                //NodeOffsetY = offy,
+                NodeOffsetX = offx,
+                NodeOffsetY = offy,
                 Node = node,
             };
             if (node.Ports == null)

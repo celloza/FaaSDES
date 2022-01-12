@@ -1,10 +1,4 @@
 ﻿using FaaSDES.Sim.NodeStatistics;
-using FaaSDES.Sim.Tokens;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FaaSDES.Sim.Nodes
 {
@@ -13,6 +7,7 @@ namespace FaaSDES.Sim.Nodes
     /// </summary>
     public abstract class SimNodeBase : ISimNode, ISimNodeExecutionHandler
     {
+        #region Public Properties
 
         /// <summary>
         /// Contains a list of all the inbound flows targeting this <see cref="SimNodeBase"/>.
@@ -112,6 +107,8 @@ namespace FaaSDES.Sim.Nodes
             ExecutionQueue = new NodeQueue(resourcesAvailable);
         }
 
+        #endregion
+
         #region Constructors
 
         /// <summary>
@@ -153,7 +150,11 @@ namespace FaaSDES.Sim.Nodes
 
         #endregion
 
+        #region Fields
+
         internal bool _isStatsEnabled;
+
+        #endregion
 
     }
 }

@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using FaaSDES.Sim;
@@ -11,8 +11,12 @@ using FaaSDES.Sim.Tokens.Generation;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.WindowsAzure.Storage.Table;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
+using FaaSDES.Functions.Statistics;
+using Microsoft.AspNetCore.Mvc;
 
 namespace FaaSDES.Functions
 {
@@ -25,7 +29,7 @@ namespace FaaSDES.Functions
             var data = context.GetInput<SimulationRequest>();
 
             log.LogInformation($"Received BPMN XML configuration:");
-            //log.LogInformation(data.GetBpmnXmlData());
+            log.LogInformation(data.GetBpmnXmlData());
 
             var parallelTasks = new List<Task<string>>();
 
@@ -37,6 +41,12 @@ namespace FaaSDES.Functions
             }
 
             await Task.WhenAll(parallelTasks);
+
+            foreach(var task in parallelTasks)
+            {
+                Task<string> flushTask = context.CallActivityAsync<string>("SimulationOrchestrator_FlushLogs",
+                    System.Text.Json.JsonSerializer.Deserialize<List<EventStatistic>>(task.Result));
+            }
 
             // Aggregate all N outputs and send the result to F3.
             //string result = string.Join("\n\r", parallelTasks);
@@ -58,7 +68,7 @@ namespace FaaSDES.Functions
                             new TimeOnly(15, 0),
                             new WeekDaySchedule(true, true, true, true, true, false, false));
 
-            //log.LogInformation(tokenGenerator.ToString());
+            log.LogInformation(tokenGenerator.ToString());
 
             var simSettings = new SimulationSettings()
             {
@@ -69,11 +79,11 @@ namespace FaaSDES.Functions
                 TokenMaxQueueTime = new TimeSpan(1, 30, 0)
             };
 
-            //log.LogInformation(simSettings.ToString());
+            log.LogInformation(simSettings.ToString());
 
             var simulation = simulator.NewSimulationInstance(simSettings, tokenGenerator);
 
-            //log.LogInformation(simulation.ToString());
+            log.LogInformation(simulation.ToString());
             log.LogInformation("Starting simulation execution...");
 
             System.Diagnostics.Stopwatch sw = new();
@@ -83,7 +93,7 @@ namespace FaaSDES.Functions
 
             sw.Stop();
 
-            log.LogInformation($"Execution completed in {TimeSpan.FromMilliseconds(sw.ElapsedMilliseconds):G}");
+            log.LogInformation($"Execution of simulation completed in {TimeSpan.FromMilliseconds(sw.ElapsedMilliseconds):G}");
 
             log.LogInformation("Dumping results...");
 
@@ -91,15 +101,19 @@ namespace FaaSDES.Functions
         }
 
         [FunctionName("SimulationOrchestrator_FlushLogs")]
-        public static string FlushLogs([ActivityTrigger] SimulationRequest xmlContent, 
-            ILogger log) //,
-            //[Table("todos", Connection = "AzureWebJobsStorage")] IAsyncCollector<TodoTable> todoTableCollector) //, IAsyncCollector<EventStatistic> outputTable
+        public static async Task<string> FlushLogs([ActivityTrigger] List<EventStatistic> statistics, 
+            ILogger log)
+            
         {
             log.LogInformation("Flush logs activity started.");
 
-            
+            foreach(var stat in statistics)
+            {
+                //await statTableCollector.AddAsync(stat.ToTableEntity());
 
-            return "Simulation complete.";
+            }
+
+            return "Logs queued for flushing.";
         }
 
         [FunctionName("SimulationOrchestrator_HttpStart")]

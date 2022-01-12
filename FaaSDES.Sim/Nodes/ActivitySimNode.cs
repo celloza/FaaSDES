@@ -1,12 +1,8 @@
-﻿using FaaSDES.Sim.NodeStatistics;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace FaaSDES.Sim.Nodes
+﻿namespace FaaSDES.Sim.Nodes
 {
+    /// <summary>
+    /// Class representing the Activity/Task BPMN symbol.
+    /// </summary>
     public class ActivitySimNode : SimNodeBase
     {
         public ActivitySimNodeType Type { get; set; } = ActivitySimNodeType.Undefined;

@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace FaaSDES.Sim.Nodes.GatewayProbabilityDistributions
+﻿namespace FaaSDES.Sim.Nodes.GatewayProbabilityDistributions
 {
+    /// <summary>
+    /// An implementation of <see cref="IGatewayProbabilityDistribution"/> that evenly
+    /// distributes amongst the provided options.
+    /// </summary>
     public class EvenSplit : IGatewayProbabilityDistribution
-    {       
-
+    {  
         public SequenceFlow ChooseSequenceFlow(IEnumerable<SequenceFlow> sequenceFlows)
         {
             throw new NotImplementedException();
@@ -30,6 +27,6 @@ namespace FaaSDES.Sim.Nodes.GatewayProbabilityDistributions
             }
         }
 
-        private int[,] _selectionHistory;
+        private readonly int[,] _selectionHistory;
     }
 }

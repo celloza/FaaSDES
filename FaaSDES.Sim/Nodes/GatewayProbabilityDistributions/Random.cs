@@ -1,11 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace FaaSDES.Sim.Nodes.GatewayProbabilityDistributions
+﻿namespace FaaSDES.Sim.Nodes.GatewayProbabilityDistributions
 {
+    /// <summary>
+    /// An implementation of <see cref="IGatewayProbabilityDistribution"/> that 
+    /// randomly picks amongst the provided options.
+    /// </summary>
     public class Random : IGatewayProbabilityDistribution
     {
         public SequenceFlow ChooseSequenceFlow(IEnumerable<SequenceFlow> sequenceFlows)
@@ -18,6 +16,6 @@ namespace FaaSDES.Sim.Nodes.GatewayProbabilityDistributions
             return _random.NextDouble();
         }
 
-        private System.Random _random = new();
+        private readonly System.Random _random = new();
     }
 }

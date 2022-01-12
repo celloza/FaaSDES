@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace FaaSDES.Sim.NodeStatistics
@@ -62,10 +63,13 @@ namespace FaaSDES.Sim.NodeStatistics
             EventStatistics = new List<EventStatistic>();
         }
 
-        public EventStatistic AddEventStat(DateTime dateOfOccurence, EventStatisticType type, string nodeName)
+        public EventStatistic AddEventStat(DateTime dateOfOccurence, EventStatisticType type, string nodeName, Guid simulationId)
         {
-            var eventStat = new EventStatistic(dateOfOccurence, type, nodeName);
+            var eventStat = new EventStatistic(dateOfOccurence, type, nodeName, simulationId);
             (EventStatistics as List<EventStatistic>).Add(eventStat);
+
+            //System.IO.File.AppendAllText("c:\\temp\\data.txt", JsonSerializer.Serialize(eventStat));
+
             return eventStat;
         }        
     }
