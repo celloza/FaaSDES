@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using FaaSDES.Sim;
@@ -10,8 +11,12 @@ using FaaSDES.Sim.Tokens.Generation;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.DurableTask;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.WindowsAzure.Storage.Table;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
+using FaaSDES.Functions.Statistics;
+using Microsoft.AspNetCore.Mvc;
 
 namespace FaaSDES.Functions
 {
@@ -19,19 +24,29 @@ namespace FaaSDES.Functions
     {
         [FunctionName("SimulationOrchestrator")]
         public static async Task<List<string>> RunOrchestrator(
-            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            [OrchestrationTrigger] IDurableOrchestrationContext context, ILogger log)
         {
             var data = context.GetInput<SimulationRequest>();
 
+            log.LogInformation($"Received BPMN XML configuration:");
+            log.LogInformation(data.GetBpmnXmlData());
+
             var parallelTasks = new List<Task<string>>();
 
-            //for (int i = 0; i < 10; i++)
-            //{
-                Task<string> task = context.CallActivityAsync<string>("SimulationOrchestrator_ExecuteSim", data); 
+            for (int i = 0; i < data.Iterations; i++)
+            {
+                log.LogInformation(@"Creating task #" + i);
+                Task<string> task = context.CallActivityAsync<string>("SimulationOrchestrator_ExecuteSim", data);
                 parallelTasks.Add(task);
-            //}
+            }
 
             await Task.WhenAll(parallelTasks);
+
+            foreach(var task in parallelTasks)
+            {
+                Task<string> flushTask = context.CallActivityAsync<string>("SimulationOrchestrator_FlushLogs",
+                    System.Text.Json.JsonSerializer.Deserialize<List<EventStatistic>>(task.Result));
+            }
 
             // Aggregate all N outputs and send the result to F3.
             //string result = string.Join("\n\r", parallelTasks);
@@ -43,12 +58,7 @@ namespace FaaSDES.Functions
         [FunctionName("SimulationOrchestrator_ExecuteSim")]
         public static string ExecuteSim([ActivityTrigger] SimulationRequest xmlContent, ILogger log) //, IAsyncCollector<EventStatistic> outputTable
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
-
-            //string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
-
-            log.LogInformation($"Received BPMN XML configuration:");
-            log.LogInformation(xmlContent.GetBpmnXmlData());
+            log.LogInformation("Execute sim activity started.");
 
             Simulator simulator = Simulator.FromBpmnXML(xmlContent.GetBpmnXmlData());
 
@@ -83,14 +93,27 @@ namespace FaaSDES.Functions
 
             sw.Stop();
 
-            log.LogInformation($"Execution completed in {TimeSpan.FromMilliseconds(sw.ElapsedMilliseconds):G}");
+            log.LogInformation($"Execution of simulation completed in {TimeSpan.FromMilliseconds(sw.ElapsedMilliseconds):G}");
 
             log.LogInformation("Dumping results...");
 
-            //outputTable.AddAsync()
-            //outputTable.FlushAsync();
+            return System.Text.Json.JsonSerializer.Serialize(simulation.GetAllEventStatistics().ToList());
+        }
 
-            return "Simulation complete.";
+        [FunctionName("SimulationOrchestrator_FlushLogs")]
+        public static async Task<string> FlushLogs([ActivityTrigger] List<EventStatistic> statistics, 
+            ILogger log)
+            
+        {
+            log.LogInformation("Flush logs activity started.");
+
+            foreach(var stat in statistics)
+            {
+                //await statTableCollector.AddAsync(stat.ToTableEntity());
+
+            }
+
+            return "Logs queued for flushing.";
         }
 
         [FunctionName("SimulationOrchestrator_HttpStart")]
@@ -99,18 +122,11 @@ namespace FaaSDES.Functions
             [DurableClient] IDurableOrchestrationClient starter,
             ILogger log)
         {
-            //var data = req.Content;
-
-            
-            // Why is this null?
-            //SimulationRequest data = await req.Content.ReadAsAsync<SimulationRequest>();
-
-            // But this isn't?
-            var data2 = req.Content.ReadAsStringAsync();
-            SimulationRequest test = System.Text.Json.JsonSerializer.Deserialize<SimulationRequest>(data2.Result);
+            var data = req.Content.ReadAsStringAsync();
+            SimulationRequest request = System.Text.Json.JsonSerializer.Deserialize<SimulationRequest>(data.Result);
 
             //Function input comes from the request content.
-            string instanceId = await starter.StartNewAsync("SimulationOrchestrator", test);
+            string instanceId = await starter.StartNewAsync("SimulationOrchestrator", request);
 
             log.LogInformation($"Started orchestration with ID = '{instanceId}'.");
 

@@ -288,6 +288,11 @@ namespace FaaSDES.Sim
             }
         }
 
+        /// <summary>
+        /// Initializes the provided <see cref="XElement"/>'s properties.
+        /// </summary>
+        /// <param name="source">The <see cref="XElement"/> whose properties should be returned.</param>
+        /// <returns>A list of <see cref="BpmnProperty"/>.</returns>
         private IEnumerable<BpmnProperty> PropertyInitializer(XElement source)
         {
             var itemDefinitions = source.Parent.Elements(BpmnNamespace + "itemDefinition");
@@ -327,11 +332,33 @@ namespace FaaSDES.Sim
 
     internal class BpmnProperty
     {
+        /// <summary>
+        /// An identified for this property.
+        /// </summary>
         public string Id { get; set; }
+
+        /// <summary>
+        /// This property's name.
+        /// </summary>
         public string Name { get; set; }
+
+        /// <summary>
+        /// The structural reference number for this property.
+        /// </summary>
         public string StructureRef { get; set; }
+
+        /// <summary>
+        /// Signifies whether this property is a collection.
+        /// </summary>
         public bool IsCollection { get; set; }
 
+        /// <summary>
+        /// Default constructor.
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="name"></param>
+        /// <param name="structureRef"></param>
+        /// <param name="isCollection"></param>
         public BpmnProperty(string id, string name, string structureRef, bool isCollection)
         {
             Id = id;

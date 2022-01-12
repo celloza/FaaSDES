@@ -1,16 +1,10 @@
-﻿using FaaSDES.Sim.NodeStatistics;
-using FaaSDES.Sim.Tokens.Generation;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace FaaSDES.Sim.Nodes
+﻿namespace FaaSDES.Sim.Nodes
 {
+    /// <summary>
+    /// Class representing the Start BPMN symbol.
+    /// </summary>
     public class StartSimNode : SimNodeBase
     {
-
         public override void EnableStats()
         {
             if (!_isStatsEnabled)

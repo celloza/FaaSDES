@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace FaaSDES.Sim.Nodes
 {
+    /// <summary>
+    /// A single instance of an item in a <see cref="NodeQueue"/>.
+    /// </summary>
     public class NodeQueueItem
     {
         /// <summary>

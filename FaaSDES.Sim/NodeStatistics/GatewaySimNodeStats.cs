@@ -4,6 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+/// <summary>
+/// Class encapsulating a single statistical event captured by a 
+/// <see cref="GatewaySimNode"/> during the execution of a <see cref="Simulation"/>.
+/// </summary>
 namespace FaaSDES.Sim.NodeStatistics
 {
     public class GatewaySimNodeStats : SimNodeStats
